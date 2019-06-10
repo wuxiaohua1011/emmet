@@ -100,6 +100,6 @@ class BondBuilder(MapBuilder):
 
         return {
             "pymatgen_version": str(pymatgen_version),
-            "bonding": [b for b in bonding_docs if b["successful"]],
-            "failed_bonding": [b["strategy"] for b in bonding_docs if not b["successful"]]
+            "bonding": {b["strategy"]: b for b in bonding_docs if b["successful"]},
+            "failed_bonding": {b["strategy"]: b for b in bonding_docs if not b["successful"]},
         }
