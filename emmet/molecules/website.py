@@ -211,13 +211,13 @@ class WebsiteMoleculesBuilder(Builder):
 
 # The two functions below were taken directly from Rubicon
 def xyz2svg(xyz):
-    babel_cmd = shlex.split("babel -ixyz -osvg")
+    babel_cmd = shlex.split("babel -ixyz -osvg --title ''")
     p = subprocess.Popen(babel_cmd,
                          stdin=subprocess.PIPE,
                          stdout=subprocess.PIPE,
                          stderr=subprocess.PIPE)
     out, err = p.communicate(str(xyz).encode('utf-8'))
-    return str(out)
+    return out.decode()
 
 
 def modify_svg(svg):
