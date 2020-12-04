@@ -336,8 +336,8 @@ def restore(inputfile, file_filter):
     "-l",
     "--input_dir",
     required=True,
-    type=click.Path(exists=True),
-    help="Directory of blocks to upload to GDrive. ex: $SCRATCH/projects/compressed",
+    type=click.Path(exists=False),
+    help="Directory of blocks to upload to GDrive, relative to ('directory') ex: compressed",
 )
 @click.option(
     "-o",
@@ -346,7 +346,7 @@ def restore(inputfile, file_filter):
     default=TMP_STORAGE,
     show_default=True,
     type=click.Path(exists=False),
-    help="Directory to move the data to after upload is done, relative to ('directory'). ex: $SCRATCH/projects/temp_storage"
+    help="Directory to move the data to after upload is done, relative to ('directory'). ex: temp_storage"
          "Not moving if it is not supplied",
 )
 def upload(input_dir, output_dir):
