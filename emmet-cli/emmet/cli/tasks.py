@@ -376,14 +376,16 @@ def upload(input_dir, output_dir):
     help="Directory of blocks to output the compressed blocks. ex: $SCRATCH/projects/compressed",
 )
 def compress(input_dir, output_dir):
-    launcher_dirs: List[str] = []
+    paths: List[str] = []
     for root, dirs, files in os.walk(input_dir):
         for name in dirs:
-            curr_dir = name
-            if "launcher" in curr_dir:
-                launcher_dirs.append(curr_dir)
+            if "launcher" in name:
+                dir_name = os.path.join(root, name)
+                start = dir_name.find("block_")
+                dir_name = dir_name[start:]
+                paths.append(dir_name)
 
-    paths_organized: Dict[str, List[str]] = organize_path(launcher_dirs)
+    paths_organized: Dict[str, List[str]] = organize_path(paths)
     print(paths_organized)
     return ReturnCodes.SUCCESS
 
