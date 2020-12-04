@@ -17,6 +17,9 @@ from emmet.cli.utils import VaspDirsGenerator, EmmetCliError, ReturnCodes
 from emmet.cli.utils import ensure_indexes, get_subdir, parse_vasp_dirs
 from emmet.cli.utils import chunks, iterator_slice
 from emmet.cli.decorators import sbatch
+from emmet.cli.utils import organize_path
+
+from typing import List, Dict
 from pathlib import Path
 logger = logging.getLogger("emmet")
 GARDEN = "/home/m/matcomp/garden"
@@ -364,11 +367,15 @@ def upload(input_dir, output_dir):
     help="Directory of blocks to output the compressed blocks. ex: $SCRATCH/projects/compressed",
 )
 def compress(input_dir, output_dir):
+    launcher_dirs: List[Path] = []
     for root, dirs, files in os.walk(input_dir):
         for name in dirs:
-            curr_dir = Path(os.path.join(root, name))
-            print(curr_dir)
+            curr_dir = Path(name)
+            if "launcher" in curr_dir.as_posix():
+                launcher_dirs.append(curr_dir)
 
+    paths_organized: Dict[str, List[str]] = organize_path(launcher_dirs)
+    print(paths_organized)
     return ReturnCodes.SUCCESS
 
 
