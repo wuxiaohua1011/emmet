@@ -374,6 +374,7 @@ def upload(input_dir, output_dir):
         for name in dirs:
             if "launcher" in name:
                 # if the word launcher is in there, then it must be in a block already
+                print(name)
                 launcher_count += 1
             else:
                 block_count += 1
