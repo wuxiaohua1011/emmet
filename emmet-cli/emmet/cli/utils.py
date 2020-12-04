@@ -24,6 +24,10 @@ from dotty_dict import dotty
 from emmet.core.utils import group_structures
 from emmet.cli import SETTINGS
 
+from pathlib import Path
+import tarfile
+import subprocess, shlex
+
 logger = logging.getLogger("emmet")
 perms = stat.S_IRUSR | stat.S_IWUSR | stat.S_IRGRP | stat.S_IWGRP
 
@@ -137,7 +141,7 @@ def iterator_slice(iterator, length):
 
 
 def chunks(lst, n):
-    return [lst[i : i + n] for i in range(0, len(lst), n)]
+    return [lst[i: i + n] for i in range(0, len(lst), n)]
 
 
 def get_subdir(dn):
@@ -299,10 +303,10 @@ def reconstruct_command(sbatch=False):
     ctx = click.get_current_context()
     command = []
     for level, (cmd, params) in enumerate(
-        zip(
-            ctx.command_path.split(),
-            [ctx.grand_parent.params, ctx.parent.params, ctx.params],
-        )
+            zip(
+                ctx.command_path.split(),
+                [ctx.grand_parent.params, ctx.parent.params, ctx.params],
+            )
     ):
         command.append(cmd)
         if level:
@@ -453,3 +457,18 @@ def parse_vasp_dirs(vaspdirs, tag, task_ids, snl_metas):  # noqa: C901
             count += 1
 
     return count
+
+
+def make_tar_file(output_dir: Path, output_file_name: str, source_dir: Path):
+    if not output_file_name.endswith(".tar.gz"):
+        output_file_name = output_file_name + ".tar.gz"
+    if output_dir.exists() is False:
+        output_dir.mkdir(parents=True, exist_ok=True)
+    output_tar_file = output_dir / output_file_name
+
+    if output_tar_file.exists() is False:
+        with tarfile.open(output_tar_file.as_posix(), "w:gz") as tar:
+            tar.add(source_dir.as_posix(), arcname=os.path.basename(source_dir.as_posix()))
+
+def run_command(command):
+    subprocess.call(shlex.split(command))
