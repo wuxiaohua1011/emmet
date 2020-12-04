@@ -376,6 +376,7 @@ def upload(input_dir, output_dir):
         # run_command(args=["rclone", "-P", "remote: "], filelist=[full_input_dir.as_posix()])
         logger.info(msg=base_msg)
     else:
+        subprocess.call(shlex.split(f"rclone -P copy {full_input_dir.as_posix()} remote:"))
         logger.info(msg="would have " + base_msg)
 
     return ReturnCodes.SUCCESS
