@@ -371,7 +371,7 @@ def upload(input_dir, output_dir):
     "-l",
     "--input_dir",
     required=True,
-    type=click.Path(exists=True),
+    type=click.Path(),
     help="Directory of blocks to compress, relative to ('directory') ex: raw`",
 )
 @click.option(
@@ -387,9 +387,11 @@ def compress(input_dir, output_dir):
     nmax = ctx.parent.params["nmax"]
     pattern = ctx.parent.params["pattern"]
     directory = ctx.parent.params["directory"]
-
+    root_dir: Path = (Path(directory) / input_dir)
+    if root_dir.exists() is False:
+        raise FileNotFoundError(f"input_dir {root_dir.as_posix()} not found")
     paths: List[str] = []
-    for root, dirs, files in os.walk((Path(directory) / input_dir).as_posix()):
+    for root, dirs, files in os.walk(root_dir.as_posix()):
         for name in dirs:
             if "launcher" in name:
                 dir_name = os.path.join(root, name)
