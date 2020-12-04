@@ -381,7 +381,7 @@ def upload(input_dir, output_dir):
         if full_output_dir.exists() is False:
             full_output_dir.mkdir(exist_ok=True, parents=True)
 
-        subprocess.call(shlex.split(f"rclone -P copy {full_input_dir.as_posix()} GDriveUpload:"))
+        subprocess.call(shlex.split(f"rclone copy {full_input_dir.as_posix()} GDriveUpload:"))
         # run_command(args=["rclone", "-P", "remote: "], filelist=[full_input_dir.as_posix()])
         logger.info(msg=base_msg)
     else:
