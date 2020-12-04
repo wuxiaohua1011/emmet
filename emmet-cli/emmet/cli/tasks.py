@@ -387,7 +387,7 @@ def compress(input_dir, output_dir):
 
     paths_organized: Dict[str, List[str]] = organize_path(paths)
     for block_name, launcher_paths in paths_organized.items():
-        compress_launchers(input_dir=Path(input_dir), output_dir=output_dir,
+        compress_launchers(input_dir=Path(input_dir), output_dir=Path(output_dir),
                            block_name=block_name, launcher_paths=launcher_paths)
     return ReturnCodes.SUCCESS
 
