@@ -40,6 +40,8 @@ FILE_FILTERS_DEFAULT = [
 ]
 STORE_VOLUMETRIC_DATA = []
 
+TMP_STORAGE = "$SCRATCH/projects/tmp_storage"
+
 
 @click.group()
 @click.option(
@@ -341,6 +343,8 @@ def restore(inputfile, file_filter):
     "-o",
     "--output_dir",
     required=False,
+    default=TMP_STORAGE,
+    show_default=True,
     type=click.Path(exists=False),
     help="Directory to move the data to after upload is done. ex: $SCRATCH/projects/temp_storage"
          "Not moving if it is not supplied",
