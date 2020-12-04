@@ -369,13 +369,13 @@ def upload(input_dir, output_dir):
             else:
                 block_count += 1
 
-    base_msg = f"uploading [{block_count}] blocks with [{launcher_count}] launchers"
+    base_msg = f"upload [{block_count}] blocks with [{launcher_count}] launchers"
     if run:
         if full_output_dir.exists() is False:
             full_output_dir.mkdir(exist_ok=True, parents=True)
         print("Not implemented yet")
     else:
-        pass
+        logger.info(msg="would have " + base_msg)
 
     return ReturnCodes.SUCCESS
 
