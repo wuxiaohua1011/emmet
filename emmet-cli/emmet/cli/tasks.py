@@ -355,7 +355,7 @@ def restore(inputfile, file_filter):  # noqa: C901
     default=TMP_STORAGE,
     show_default=True,
     type=click.Path(exists=False),
-    help="Directory to move the data to after upload is done. ex: $SCRATCH/projects/temp_storage"
+    help="Directory to move the data to after upload is done, relative to ('directory'). ex: $SCRATCH/projects/temp_storage"
          "Not moving if it is not supplied",
 )
 def upload(input_dir, output_dir):
@@ -364,13 +364,28 @@ def upload(input_dir, output_dir):
     nmax = ctx.parent.params["nmax"]
     pattern = ctx.parent.params["pattern"]
     directory = ctx.parent.params["directory"]
+    full_input_dir: Path = (Path(directory) / input_dir)
+    full_output_dir: Path = (Path(directory) / output_dir)
+    if full_input_dir.exists() is False:
+        raise FileNotFoundError(f"input_dir {full_input_dir.as_posix()} not found")
+    block_count = 0
+    launcher_count = 0
+    for root, dirs, files in os.walk(full_input_dir.as_posix()):
+        for name in dirs:
+            if "launcher" in name:
+                # if the word launcher is in there, then it must be in a block already
+                launcher_count += 1
+            else:
+                block_count += 1
 
+    base_msg = f"uploading [{block_count}] blocks with [{launcher_count}] launchers"
     if run:
+        if full_output_dir.exists() is False:
+            full_output_dir.mkdir(exist_ok=True, parents=True)
         print("Not implemented yet")
     else:
         pass
 
-    print(input_dir, output_dir)
     return ReturnCodes.SUCCESS
 
 
@@ -410,7 +425,6 @@ def compress(input_dir, output_dir):
     paths_organized: Dict[str, List[str]] = organize_path(paths)
     msg = f"compressed [{len(paths_organized)}] blocks with [{len(paths)}] launchers"
     if run:
-
         for block_name, launcher_paths in paths_organized.items():
             compress_launchers(input_dir=Path(input_dir), output_dir=Path(output_dir),
                                block_name=block_name, launcher_paths=launcher_paths)
