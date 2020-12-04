@@ -17,8 +17,7 @@ from emmet.cli.utils import VaspDirsGenerator, EmmetCliError, ReturnCodes
 from emmet.cli.utils import ensure_indexes, get_subdir, parse_vasp_dirs
 from emmet.cli.utils import chunks, iterator_slice
 from emmet.cli.decorators import sbatch
-
-
+from pathlib import Path
 logger = logging.getLogger("emmet")
 GARDEN = "/home/m/matcomp/garden"
 PREFIXES = ["res_", "aflow_", "block_"]
@@ -78,7 +77,7 @@ def run_command(args, filelist):
     nargs, nfiles, nshow = len(args), len(filelist), 1
     full_args = args + filelist
     args_short = (
-        full_args[: nargs + nshow] + [f"({nfiles-1} more ...)"]
+        full_args[: nargs + nshow] + [f"({nfiles - 1} more ...)"]
         if nfiles > nshow
         else full_args
     )
@@ -280,7 +279,7 @@ def restore(inputfile, file_filter):  # noqa: C901
         args = shlex.split(f"htar -tf {GARDEN}/{block}.tar")
         filelist = [os.path.join(block, f) for f in files]
         filelist_chunks = [
-            filelist[i : i + max_args] for i in range(0, len(filelist), max_args)
+            filelist[i: i + max_args] for i in range(0, len(filelist), max_args)
         ]
         filelist_restore, cnt = [], 0
         try:
@@ -307,7 +306,7 @@ def restore(inputfile, file_filter):  # noqa: C901
                 )
                 args = shlex.split(f"htar -xvf {GARDEN}/{block}.tar")
                 filelist_restore_chunks = [
-                    filelist_restore[i : i + max_args]
+                    filelist_restore[i: i + max_args]
                     for i in range(0, len(filelist_restore), max_args)
                 ]
                 try:
@@ -356,6 +355,7 @@ def upload(input_dir, output_dir):
     print(input_dir, output_dir)
     return ReturnCodes.SUCCESS
 
+
 @tasks.command()
 @sbatch
 @click.option(
@@ -373,7 +373,11 @@ def upload(input_dir, output_dir):
     help="Directory of blocks to output the compressed blocks. ex: $SCRATCH/projects/compressed",
 )
 def compress(input_dir, output_dir):
-    print(f"Zipping {input_dir}, putting data to {output_dir}")
+    for root, dirs, files in os.walk(input_dir):
+        for name in dirs:
+            curr_dir = Path(os.path.join(root, name))
+            print(curr_dir)
+
     return ReturnCodes.SUCCESS
 
 
