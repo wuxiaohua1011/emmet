@@ -17,7 +17,7 @@ from emmet.cli.utils import VaspDirsGenerator, EmmetCliError, ReturnCodes
 from emmet.cli.utils import ensure_indexes, get_subdir, parse_vasp_dirs
 from emmet.cli.utils import chunks, iterator_slice
 from emmet.cli.decorators import sbatch
-from emmet.cli.utils import organize_path
+from emmet.cli.utils import organize_path, compress_launchers
 
 from typing import List, Dict
 from pathlib import Path
@@ -386,7 +386,9 @@ def compress(input_dir, output_dir):
                 paths.append(dir_name)
 
     paths_organized: Dict[str, List[str]] = organize_path(paths)
-    print(paths_organized)
+    for block_name, launcher_paths in paths_organized.items():
+        compress_launchers(input_dir=input_dir, output_dir=output_dir,
+                           block_name=block_name, launcher_paths=launcher_paths)
     return ReturnCodes.SUCCESS
 
 

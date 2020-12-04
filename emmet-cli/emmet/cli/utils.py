@@ -504,5 +504,15 @@ def organize_launchers(block_name: str, launcher_names: List[str]) -> List[str]:
     return result
 
 
+def compress_launchers(input_dir: Path, output_dir: Path, block_name: str, launcher_paths: List[str]):
+    logger.debug(f"Compressing [{len(launcher_paths)}] launchers for [{block_name}]")
+    for launcher_path in launcher_paths:
+        source_dir = input_dir / launcher_path
+        print(output_dir, launcher_path.split("/")[-1], source_dir)
+        # make_tar_file(output_dir=output_dir / block_name,
+        #               output_file_name=launcher_path.split("/")[-1],
+        #               source_dir=source_dir)
+
+
 def run_command(command):
     subprocess.call(shlex.split(command))
