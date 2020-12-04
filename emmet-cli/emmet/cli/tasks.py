@@ -398,9 +398,10 @@ def compress(input_dir, output_dir):
                 start = dir_name.find("block_")
                 dir_name = dir_name[start:]
                 paths.append(dir_name)
-    msg = f"compressed [{len(paths)}] launchers"
+    paths_organized: Dict[str, List[str]] = organize_path(paths)
+    msg = f"compressed [{len(paths_organized)}] blocks with [{len(paths_organized.values())}] launchers"
     if run:
-        paths_organized: Dict[str, List[str]] = organize_path(paths)
+
         for block_name, launcher_paths in paths_organized.items():
             compress_launchers(input_dir=Path(input_dir), output_dir=Path(output_dir),
                                block_name=block_name, launcher_paths=launcher_paths)
