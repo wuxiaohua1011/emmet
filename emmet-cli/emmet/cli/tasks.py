@@ -333,17 +333,19 @@ def restore(inputfile, file_filter):
     "--input_dir",
     required=True,
     type=click.Path(exists=True),
-    help="Directory of blocks to upload to GDrive, relative to `directory`",
+    help="Directory of blocks to upload to GDrive. ex: $SCRATCH/projects/compressed",
 )
 @click.option(
     "-o",
     "--output_dir",
     required=False,
     type=click.Path(exists=False),
-    help="Directory to move the data to after upload is done, relative to `directory`. Not moving if it is not supplied",
+    help="Directory to move the data to after upload is done. ex: $SCRATCH/projects/temp_storage"
+         "Not moving if it is not supplied",
 )
 def upload(input_dir, output_dir):
     print(input_dir, output_dir)
+    return ReturnCodes.SUCCESS
 
 @tasks.command()
 @sbatch
@@ -352,17 +354,18 @@ def upload(input_dir, output_dir):
     "--input_dir",
     required=True,
     type=click.Path(exists=True),
-    help="Directory of blocks to compress, relative to `directory`",
+    help="Directory of blocks to compress. ex: $SCRATCH/projects/raw`",
 )
 @click.option(
     "-o",
     "--output_dir",
     required=True,
     type=click.Path(exists=False),
-    help="Directory of blocks to output the compressed blocks, relative to `directory`",
+    help="Directory of blocks to output the compressed blocks. ex: $SCRATCH/projects/compressed",
 )
 def compress(input_dir, output_dir):
     print(f"Zipping {input_dir}, putting data to {output_dir}")
+    return ReturnCodes.SUCCESS
 
 
 @tasks.command()
