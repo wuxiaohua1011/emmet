@@ -359,6 +359,17 @@ def restore(inputfile, file_filter):  # noqa: C901
          "Not moving if it is not supplied",
 )
 def upload(input_dir, output_dir):
+    ctx = click.get_current_context()
+    run = ctx.parent.parent.params["run"]
+    nmax = ctx.parent.params["nmax"]
+    pattern = ctx.parent.params["pattern"]
+    directory = ctx.parent.params["directory"]
+
+    if run:
+        print("Not implemented yet")
+    else:
+        pass
+
     print(input_dir, output_dir)
     return ReturnCodes.SUCCESS
 
@@ -370,29 +381,39 @@ def upload(input_dir, output_dir):
     "--input_dir",
     required=True,
     type=click.Path(exists=True),
-    help="Directory of blocks to compress. ex: $SCRATCH/projects/raw`",
+    help="Directory of blocks to compress, relative to ('directory') ex: raw`",
 )
 @click.option(
     "-o",
     "--output_dir",
     required=True,
     type=click.Path(exists=False),
-    help="Directory of blocks to output the compressed blocks. ex: $SCRATCH/projects/compressed",
+    help="Directory of blocks to output the compressed blocks, relative to ('directory') ex: compressed",
 )
 def compress(input_dir, output_dir):
+    ctx = click.get_current_context()
+    run = ctx.parent.parent.params["run"]
+    nmax = ctx.parent.params["nmax"]
+    pattern = ctx.parent.params["pattern"]
+    directory = ctx.parent.params["directory"]
+
     paths: List[str] = []
-    for root, dirs, files in os.walk(input_dir):
+    for root, dirs, files in os.walk((Path(directory) / input_dir).as_posix()):
         for name in dirs:
             if "launcher" in name:
                 dir_name = os.path.join(root, name)
                 start = dir_name.find("block_")
                 dir_name = dir_name[start:]
                 paths.append(dir_name)
-
-    paths_organized: Dict[str, List[str]] = organize_path(paths)
-    for block_name, launcher_paths in paths_organized.items():
-        compress_launchers(input_dir=Path(input_dir), output_dir=Path(output_dir),
-                           block_name=block_name, launcher_paths=launcher_paths)
+    msg = f"compressed [{len(paths)}] launchers"
+    if run:
+        paths_organized: Dict[str, List[str]] = organize_path(paths)
+        for block_name, launcher_paths in paths_organized.items():
+            compress_launchers(input_dir=Path(input_dir), output_dir=Path(output_dir),
+                               block_name=block_name, launcher_paths=launcher_paths)
+        logger.info(msg=msg)
+    else:
+        logger.info(msg="would have " + msg)
     return ReturnCodes.SUCCESS
 
 
