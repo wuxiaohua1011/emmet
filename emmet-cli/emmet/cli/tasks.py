@@ -372,6 +372,7 @@ def upload(input_dir, output_dir):
     launcher_count = 0
     for root, dirs, files in os.walk(full_input_dir.as_posix()):
         for name in dirs:
+            print(name)
             if "launcher" in name:
                 # if the word launcher is in there, then it must be in a block already
                 print(name)
