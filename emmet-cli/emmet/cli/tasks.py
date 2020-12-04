@@ -372,7 +372,7 @@ def upload(input_dir, output_dir):
     launcher_count = 0
     for root, dirs, files in os.walk(full_input_dir.as_posix()):
         for name in files:
-            print(name)
+            launcher_count += 1
         for name in dirs:
             block_count += 1
 
