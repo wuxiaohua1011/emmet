@@ -25,6 +25,7 @@ from emmet.core.utils import group_structures
 from emmet.cli import SETTINGS
 
 from pathlib import Path
+from typing import List, Dict
 import tarfile
 import subprocess, shlex
 
@@ -469,6 +470,38 @@ def make_tar_file(output_dir: Path, output_file_name: str, source_dir: Path):
     if output_tar_file.exists() is False:
         with tarfile.open(output_tar_file.as_posix(), "w:gz") as tar:
             tar.add(source_dir.as_posix(), arcname=os.path.basename(source_dir.as_posix()))
+
+
+def organize_path(paths: List[str]) -> Dict[str, List[str]]:
+    result: Dict[str, List[str]] = dict()
+    for path in paths:
+        splitted: List[str] = path.split("/")
+        block_name, launcher_names = splitted[0], splitted[1:]
+        list_of_launchers = organize_launchers(block_name=block_name, launcher_names=launcher_names)
+        if block_name in result:
+            result[block_name].extend(list_of_launchers)
+        else:
+            result[block_name] = list_of_launchers
+    return result
+
+
+def organize_launchers(block_name: str, launcher_names: List[str]) -> List[str]:
+    """
+    turn [launcher-xxx, launcher-yyy, launcher-ccc] into
+    [block_name/launcher-xxx, block_name/launcher-xxx/launcher-yyy, block_name/launcher-xxx/launcher-yyy/launcher-ccc]
+
+    :param block_name: used to prepend block name
+    :param launcher_names: list of launcher names
+    :return: list of launcher names
+
+    """
+    result: List[str] = []
+    prev_name = block_name
+    for launcher_name in launcher_names:
+        curr_name = prev_name + "/" + launcher_name
+        result.append(curr_name)
+        prev_name = curr_name
+    return result
 
 
 def run_command(command):
