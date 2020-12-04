@@ -40,7 +40,7 @@ FILE_FILTERS_DEFAULT = [
 ]
 STORE_VOLUMETRIC_DATA = []
 
-TMP_STORAGE = "$SCRATCH/projects/tmp_storage"
+TMP_STORAGE = f"{os.environ.get('SCRATCH', '/global/cscratch1/sd/mwu1011')}/projects/tmp_storage"
 
 
 @click.group()
