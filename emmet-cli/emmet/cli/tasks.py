@@ -21,6 +21,7 @@ from emmet.cli.utils import organize_path, compress_launchers
 
 from typing import List, Dict
 from pathlib import Path
+
 logger = logging.getLogger("emmet")
 GARDEN = "/home/m/matcomp/garden"
 PREFIXES = ["res_", "aflow_", "block_"]
@@ -377,19 +378,25 @@ def upload(input_dir, output_dir):
             block_count += 1
 
     base_msg = f"upload [{block_count}] blocks with [{launcher_count}] launchers"
+
+    cmds = ["rclone",
+            "-i", "--log-file", "/global/cscratch1/sd/mwu1011/projects/logs.txt",
+            "-c", "--auto-confirm",
+            "copy",
+            full_input_dir.as_posix(),
+            "GDriveUpload:"]
     if run:
         if full_output_dir.exists() is False:
             full_output_dir.mkdir(exist_ok=True, parents=True)
-        run_outputs = run_command(args=["rclone",
-                                        "-i", "--log-file", "/global/cscratch1/sd/mwu1011/projects/logs.txt",
-                                        "-c", "--auto-confirm", "True",
-                                        "copy",
-                                        full_input_dir.as_posix(),
-                                        "GDriveUpload:"], filelist=[])
+        run_outputs = run_command(args=cmds, filelist=[])
         for run_output in run_outputs:
             logger.info(run_output)
         logger.info(msg=base_msg)
     else:
+        cmds.extend(["-n", "--dry-run"])
+        run_outputs = run_command(args=cmds, filelist=[])
+        for run_output in run_outputs:
+            logger.info(run_output)
         logger.info(msg="would have " + base_msg)
 
     return ReturnCodes.SUCCESS
