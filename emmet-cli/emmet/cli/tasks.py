@@ -381,7 +381,8 @@ def upload(input_dir, output_dir):
         if full_output_dir.exists() is False:
             full_output_dir.mkdir(exist_ok=True, parents=True)
         run_outputs = run_command(args=["rclone",
-                                        "-i", "--log-file", "/global/cscratch1/sd/mwu1011/projects/logs.txt"
+                                        "-i", "--log-file", "/global/cscratch1/sd/mwu1011/projects/logs.txt",
+                                        "-c", "--auto-confirm", "True",
                                         "copy",
                                         full_input_dir.as_posix(),
                                         "GDriveUpload:"], filelist=[])
