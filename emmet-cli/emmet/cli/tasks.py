@@ -386,7 +386,7 @@ def upload(input_dir, output_dir):
         logger.info(run_output)
         logger.info(msg=base_msg)
     else:
-        run_outputs = run_command(args=["echo", "here"], filelist=[])
+        run_outputs = run_command(args=["rclone", "copy", full_input_dir.as_posix(), "GDriveUpload:"], filelist=[])
         for run_output in run_outputs:
             logger.info(run_output)
         logger.info(msg="would have " + base_msg)
