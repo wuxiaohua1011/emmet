@@ -79,7 +79,7 @@ def prep():
 
 
 def run_command(args, filelist):
-    print("ENTERED")
+    print("Running cmds")
     nargs, nfiles, nshow = len(args), len(filelist), 1
     full_args = args + filelist
     args_short = (
@@ -88,7 +88,6 @@ def run_command(args, filelist):
         else full_args
     )
     logger.info(" ".join(args_short))
-    print("fullargs", full_args)
     popen = subprocess.Popen(
         full_args,
         stdout=subprocess.PIPE,
@@ -383,7 +382,8 @@ def upload(input_dir, output_dir):
         if full_output_dir.exists() is False:
             full_output_dir.mkdir(exist_ok=True, parents=True)
         logger.info(full_input_dir)
-        run_command(args=["rclone", "copy", full_input_dir.as_posix(), "GDriveUpload:"], filelist=[])
+        # run_command(args=["rclone", "copy", full_input_dir.as_posix(), "GDriveUpload:"], filelist=[])
+        run_command(args=["echo", "here"], filelist=[])
         logger.info(msg=base_msg)
     else:
         logger.info(msg="would have " + base_msg)
