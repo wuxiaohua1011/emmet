@@ -394,6 +394,7 @@ def upload(input_dir, logging_dir, output_dir):
         run_outputs = run_command(args=cmds, filelist=[])
         for run_output in run_outputs:
             logger.info(run_output)
+
         logger.info(msg=base_msg)
     else:
         cmds.extend(["-n", "--dry-run"])
@@ -421,11 +422,16 @@ def upload(input_dir, logging_dir, output_dir):
     type=click.Path(exists=False),
     help="Directory of blocks to output the compressed blocks, relative to ('directory') ex: compressed",
 )
-def compress(input_dir, output_dir):
+@click.option(
+    "--nproc",
+    type=int,
+    default=1,
+    show_default=True,
+    help="Number of processes for parallel parsing.",
+)
+def compress(input_dir, output_dir, nproc):
     ctx = click.get_current_context()
     run = ctx.parent.parent.params["run"]
-    nmax = ctx.parent.params["nmax"]
-    pattern = ctx.parent.params["pattern"]
     directory = ctx.parent.params["directory"]
     root_dir: Path = (Path(directory) / input_dir)
     if root_dir.exists() is False:
@@ -441,9 +447,13 @@ def compress(input_dir, output_dir):
     paths_organized: Dict[str, List[str]] = organize_path(paths)
     msg = f"compressed [{len(paths_organized)}] blocks with [{len(paths)}] launchers"
     if run:
-        for block_name, launcher_paths in paths_organized.items():
-            compress_launchers(input_dir=Path(input_dir), output_dir=Path(output_dir),
-                               block_name=block_name, launcher_paths=launcher_paths)
+        pool = multiprocessing.Pool(processes=nproc)
+        pool.map(func=compress_launchers, iterable=[(Path(input_dir), Path(output_dir),
+                                                     block_name, launcher_paths)
+                                                    for block_name, launcher_paths in paths_organized.items()])
+        # for block_name, launcher_paths in paths_organized.items():
+        #     compress_launchers(input_dir=Path(input_dir), output_dir=Path(output_dir),
+        #                        block_name=block_name, launcher_paths=launcher_paths)
         logger.info(msg=msg)
     else:
         logger.info(msg="would have " + msg)
