@@ -87,6 +87,7 @@ def run_command(args, filelist):
         else full_args
     )
     logger.info(" ".join(args_short))
+    print("fullargs", full_args)
     popen = subprocess.Popen(
         full_args,
         stdout=subprocess.PIPE,
