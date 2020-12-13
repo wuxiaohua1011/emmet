@@ -79,7 +79,6 @@ def prep():
 
 
 def run_command(args, filelist):
-    print("Running cmds")
     nargs, nfiles, nshow = len(args), len(filelist), 1
     full_args = args + filelist
     args_short = (
@@ -381,14 +380,11 @@ def upload(input_dir, output_dir):
     if run:
         if full_output_dir.exists() is False:
             full_output_dir.mkdir(exist_ok=True, parents=True)
-        # run_command(args=["rclone", "copy", full_input_dir.as_posix(), "GDriveUpload:"], filelist=[])
-        run_output = run_command(args=["echo", "here"], filelist=[])
-        logger.info(run_output)
-        logger.info(msg=base_msg)
-    else:
-        run_outputs = run_command(args=["rclone", "copy", full_input_dir.as_posix(), "GDriveUpload:"], filelist=[])
+        run_outputs = run_command(args=["rclone", "-P", "copy", full_input_dir.as_posix(), "GDriveUpload:"], filelist=[])
         for run_output in run_outputs:
             logger.info(run_output)
+        logger.info(msg=base_msg)
+    else:
         logger.info(msg="would have " + base_msg)
 
     return ReturnCodes.SUCCESS
