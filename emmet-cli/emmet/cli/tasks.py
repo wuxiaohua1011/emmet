@@ -391,7 +391,9 @@ def upload(input_dir, logging_dir, output_dir):
     base_msg = f"upload [{block_count}] blocks with [{launcher_count}] launchers"
 
     cmds = ["rclone",
-            "-i", "--log-file", f"{full_logging_dir}/rclone_logs_{datetime.datetime.now()}.txt",
+            "--log-file", f"{full_logging_dir}/rclone_logs_{datetime.datetime.now()}.txt",
+            "--log-level", "INFO",
+            "--backup-dir", f"{full_logging_dir}"
             "-c", "--auto-confirm",
             "copy",
             full_input_dir.as_posix(),
