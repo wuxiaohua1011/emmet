@@ -378,7 +378,6 @@ def upload(input_dir, output_dir):
         # run_command(args=["rclone", "-P", "remote: "], filelist=[full_input_dir.as_posix()])
         logger.info(msg=base_msg)
     else:
-        print("About to run command")
         run_command(args=["rclone", "copy", full_input_dir.as_posix(), "GDriveUpload:"], filelist=[])
         # subprocess.call(shlex.split(f"rclone -P copy {full_input_dir.as_posix()} GDriveUpload:"))
         logger.info(msg="would have " + base_msg)
