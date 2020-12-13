@@ -384,7 +384,7 @@ def upload(input_dir, logging_dir, output_dir):
     cmds = ["rclone",
             "--log-file", f"{full_logging_dir}/rclone_logs_{datetime.datetime.now()}.txt",
             "--log-level", "INFO",
-            "--backup-dir", f"{full_logging_dir}"
+            "--backup-dir", f"{full_logging_dir}",
             "-c", "--auto-confirm",
             "copy",
             full_input_dir.as_posix(),
