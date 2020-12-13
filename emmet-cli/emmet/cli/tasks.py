@@ -43,6 +43,7 @@ FILE_FILTERS_DEFAULT = [
 STORE_VOLUMETRIC_DATA = []
 
 TMP_STORAGE = f"{os.environ.get('SCRATCH', '/global/cscratch1/sd/mwu1011')}/projects/tmp_storage"
+LOG_DIR = f"{os.environ.get('SCRATCH', '/global/cscratch1/sd/mwu1011')}/projects/logs"
 
 
 @click.group()
@@ -351,6 +352,14 @@ def restore(inputfile, file_filter):  # noqa: C901
     help="Directory of blocks to upload to GDrive, relative to ('directory') ex: compressed",
 )
 @click.option(
+    "--logging_dir",
+    default=LOG_DIR,
+    required=False,
+    type=click.Path(exists=True),
+    help="Directory of logs, relative to ('directory') ex: logs",
+
+)
+@click.option(
     "-o",
     "--output_dir",
     required=False,
@@ -360,7 +369,7 @@ def restore(inputfile, file_filter):  # noqa: C901
     help="Directory to move the data to after upload is done, relative to ('directory'). ex: temp_storage"
          "Not moving if it is not supplied",
 )
-def upload(input_dir, output_dir):
+def upload(input_dir, logging_dir, output_dir):
     ctx = click.get_current_context()
     run = ctx.parent.parent.params["run"]
     nmax = ctx.parent.params["nmax"]
@@ -368,6 +377,7 @@ def upload(input_dir, output_dir):
     directory = ctx.parent.params["directory"]
     full_input_dir: Path = (Path(directory) / input_dir)
     full_output_dir: Path = (Path(directory) / output_dir)
+    full_logging_dir: Path = (Path(directory) / logging_dir)
     if full_input_dir.exists() is False:
         raise FileNotFoundError(f"input_dir {full_input_dir.as_posix()} not found")
     block_count = 0
@@ -381,7 +391,7 @@ def upload(input_dir, output_dir):
     base_msg = f"upload [{block_count}] blocks with [{launcher_count}] launchers"
 
     cmds = ["rclone",
-            "-i", "--log-file", f"{full_input_dir}/rclone_logs_{datetime.datetime.now()}.txt",
+            "-i", "--log-file", f"{full_logging_dir}/rclone_logs_{datetime.datetime.now()}.txt",
             "-c", "--auto-confirm",
             "copy",
             full_input_dir.as_posix(),
