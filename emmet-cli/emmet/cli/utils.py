@@ -513,6 +513,3 @@ def compress_launchers(input_dir: Path, output_dir: Path, block_name: str, launc
                       output_file_name=launcher_path.split("/")[-1],
                       source_dir=source_dir)
 
-
-def run_command(command):
-    subprocess.call(shlex.split(command))
