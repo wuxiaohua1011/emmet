@@ -19,6 +19,7 @@ from emmet.cli.utils import chunks, iterator_slice
 from emmet.cli.decorators import sbatch
 from emmet.cli.utils import organize_path, compress_launchers
 
+import datetime
 from typing import List, Dict
 from pathlib import Path
 
@@ -380,7 +381,7 @@ def upload(input_dir, output_dir):
     base_msg = f"upload [{block_count}] blocks with [{launcher_count}] launchers"
 
     cmds = ["rclone",
-            "-i", "--log-file", "/global/cscratch1/sd/mwu1011/projects/logs.txt",
+            "-i", "--log-file", f"{full_input_dir}/rclone_logs_{datetime.datetime.now()}.txt",
             "-c", "--auto-confirm",
             "copy",
             full_input_dir.as_posix(),
