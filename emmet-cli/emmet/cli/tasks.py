@@ -381,9 +381,9 @@ def upload(input_dir, output_dir):
     if run:
         if full_output_dir.exists() is False:
             full_output_dir.mkdir(exist_ok=True, parents=True)
-        logger.info(full_input_dir)
         # run_command(args=["rclone", "copy", full_input_dir.as_posix(), "GDriveUpload:"], filelist=[])
-        run_command(args=["echo", "here"], filelist=[])
+        run_output = run_command(args=["echo", "here"], filelist=[])
+        logger.info(run_output)
         logger.info(msg=base_msg)
     else:
         logger.info(msg="would have " + base_msg)
