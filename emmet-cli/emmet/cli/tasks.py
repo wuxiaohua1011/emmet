@@ -386,8 +386,9 @@ def upload(input_dir, output_dir):
         logger.info(run_output)
         logger.info(msg=base_msg)
     else:
-        run_output = run_command(args=["echo", "here"], filelist=[])
-        logger.info(run_output)
+        run_outputs = run_command(args=["echo", "here"], filelist=[])
+        for run_output in run_outputs:
+            logger.info(run_output)
         logger.info(msg="would have " + base_msg)
 
     return ReturnCodes.SUCCESS
