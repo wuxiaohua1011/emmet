@@ -371,7 +371,11 @@ def upload(input_dir, output_dir):
     if run:
         if full_output_dir.exists() is False:
             full_output_dir.mkdir(exist_ok=True, parents=True)
-        run_outputs = run_command(args=["rclone", "-P", "copy", full_input_dir.as_posix(), "GDriveUpload:"], filelist=[])
+        run_outputs = run_command(args=["rclone",
+                                        "-i", "--log-file", "/global/cscratch1/sd/mwu1011/projects/logs.txt"
+                                        "copy",
+                                        full_input_dir.as_posix(),
+                                        "GDriveUpload:"], filelist=[])
         for run_output in run_outputs:
             logger.info(run_output)
         logger.info(msg=base_msg)
