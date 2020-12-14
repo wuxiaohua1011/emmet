@@ -337,13 +337,13 @@ def restore(inputfile, file_filter):
 @sbatch
 @click.option(
     "-l",
-    "--input_dir",
+    "--input-dir",
     required=True,
     type=click.Path(exists=False),
     help="Directory of blocks to upload to GDrive, relative to ('directory') ex: compressed",
 )
 @click.option(
-    "--logging_dir",
+    "--logging-dir",
     default=LOG_DIR,
     required=False,
     type=click.Path(exists=True),
@@ -352,7 +352,7 @@ def restore(inputfile, file_filter):
 )
 @click.option(
     "-o",
-    "--output_dir",
+    "--output-dir",
     required=False,
     default=TMP_STORAGE,
     show_default=True,
@@ -382,7 +382,6 @@ def upload(input_dir, logging_dir, output_dir):
     base_msg = f"upload [{block_count}] blocks with [{launcher_count}] launchers"
 
     cmds = ["rclone",
-            "--log-file", f"{full_logging_dir}/rclone_logs_{datetime.datetime.now()}.txt",
             "--log-level", "INFO",
             "-c", "--auto-confirm",
             "copy",
@@ -410,14 +409,14 @@ def upload(input_dir, logging_dir, output_dir):
 @sbatch
 @click.option(
     "-l",
-    "--input_dir",
+    "--input-dir",
     required=True,
     type=click.Path(),
     help="Directory of blocks to compress, relative to ('directory') ex: raw`",
 )
 @click.option(
     "-o",
-    "--output_dir",
+    "--output-dir",
     required=True,
     type=click.Path(exists=False),
     help="Directory of blocks to output the compressed blocks, relative to ('directory') ex: compressed",
