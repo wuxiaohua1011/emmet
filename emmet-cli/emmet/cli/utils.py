@@ -27,6 +27,7 @@ from pathlib import Path
 from typing import List, Dict
 import tarfile
 import subprocess, shlex
+from pydantic import BaseModel, Field
 
 logger = logging.getLogger("emmet")
 perms = stat.S_IRUSR | stat.S_IWUSR | stat.S_IRGRP | stat.S_IWGRP
@@ -476,3 +477,9 @@ def compress_launchers(input_dir: Path, output_dir: Path, block_name: str, launc
                       output_file_name=launcher_path.split("/")[-1],
                       source_dir=source_dir)
 
+
+class GDriveLog(BaseModel):
+    path: str = Field(..., title="Path for the file",
+                      description="Should reflect both local disk space AND google drive path")
+    last_updated: datetime = Field(default=datetime.now())
+    created_at: datetime = Field(default=datetime.now())
