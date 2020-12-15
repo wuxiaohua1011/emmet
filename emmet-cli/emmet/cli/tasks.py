@@ -226,6 +226,37 @@ def backup(clean, check):  # noqa: C901
     return ReturnCodes.SUCCESS
 
 
+
+@tasks.command()
+@sbatch
+@click.option(
+    "-o",
+    "--outputfile",
+    required=True,
+    type=click.Path(),
+    help="file to save the content to. Path should be full path."
+)
+@click.option(
+    "--configfile",
+    required=True,
+    type=click.Path(exists=True),
+    help="mongo db connections. Path should be full path."
+)
+@click.option(
+    "-n",
+    "--num",
+    required=False,
+    default=1000,
+    type=click.IntRange(min=0, max=1000),
+    help="maximum number of materials to query"
+)
+def find_unuploaded_launcher_paths(outputfile, configfile, num):
+    outputfile:Path = Path(outputfile)
+    configfile:Path = Path(configfile)
+    print(outputfile, configfile)
+
+
+
 @tasks.command()
 @sbatch
 @click.option(
