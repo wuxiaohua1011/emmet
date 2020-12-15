@@ -22,6 +22,7 @@ from emmet.cli.utils import organize_path, compress_launchers
 import datetime
 from typing import List, Dict
 from pathlib import Path
+from maggma.stores.advanced_stores import MongograntStore
 
 logger = logging.getLogger("emmet")
 GARDEN = "/home/m/matcomp/garden"
@@ -226,7 +227,6 @@ def backup(clean, check):  # noqa: C901
     return ReturnCodes.SUCCESS
 
 
-
 @tasks.command()
 @sbatch
 @click.option(
@@ -252,10 +252,30 @@ def backup(clean, check):  # noqa: C901
     help="maximum number of materials to query"
 )
 def find_unuploaded_launcher_paths(outputfile, configfile, num):
-    outputfile:Path = Path(outputfile)
-    configfile:Path = Path(configfile)
-    print(outputfile, configfile)
+    outputfile: Path = Path(outputfile)
+    configfile: Path = Path(configfile)
+    if outputfile.exists():
+        logger.info(f"Will be over writing {outputfile}")
+    if configfile.exists() is False:
+        raise FileNotFoundError(f"Config file {configfile} is not found")
 
+    gdrive_mongo_store = MongograntStore(mongogrant_spec="rw:knowhere.lbl.gov/mp_core_mwu",
+                                         collection_name="gdrive",
+                                         mgclient_config_path=configfile.as_posix())
+
+
+    material_mongo_store = MongograntStore(mongogrant_spec="ro:mongodb04.nersc.gov/mp_emmet_prod",
+                                           collection_name="materials_2020_09_08",
+                                           mgclient_config_path=configfile.as_posix())
+    tasks_mongo_store = MongograntStore(mongogrant_spec="ro:mongodb04.nersc.gov/mp_emmet_prod",
+                                        collection_name="tasks",
+                                        mgclient_config_path=configfile.as_posix())
+    gdrive_mongo_store.connect()
+    material_mongo_store.connect()
+    tasks_mongo_store.connect()
+
+    logger.info("Stores connected")
+    return ReturnCodes.SUCCESS
 
 
 @tasks.command()
@@ -489,8 +509,8 @@ def compress(input_dir, output_dir, nproc):
     if run:
         pool = multiprocessing.Pool(processes=nproc)
         pool.starmap(func=compress_launchers, iterable=[(Path(input_dir), Path(output_dir),
-                                                     block_name, launcher_paths)
-                                                    for block_name, launcher_paths in paths_organized.items()])
+                                                         block_name, launcher_paths)
+                                                        for block_name, launcher_paths in paths_organized.items()])
         # for block_name, launcher_paths in paths_organized.items():
         #     compress_launchers(input_dir=Path(input_dir), output_dir=Path(output_dir),
         #                        block_name=block_name, launcher_paths=launcher_paths)
