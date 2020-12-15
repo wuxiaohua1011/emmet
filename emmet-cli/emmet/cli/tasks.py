@@ -234,7 +234,7 @@ def backup(clean, check):
     "--configfile",
     required=True,
     default="~/.mongogrant.json",
-    type=click.Path(exists=True),
+    type=click.Path(),
     help="mongo db connections. Path should be full path."
 )
 @click.option(
