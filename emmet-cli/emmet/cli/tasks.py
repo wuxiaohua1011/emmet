@@ -247,13 +247,14 @@ def backup(clean, check):
     help="maximum number of materials to query"
 )
 def find_unuploaded_launcher_paths(outputfile, configfile, num):
+    ctx = click.get_current_context()
+    run = ctx.parent.parent.params["run"]
     outputfile: Path = Path(outputfile)
     configfile: Path = Path(configfile)
-    if outputfile.exists():
-        logger.info(f"Will be over writing {outputfile}")
     if configfile.exists() is False:
-        raise FileNotFoundError(f"Config file {configfile} is not found")
+        raise FileNotFoundError(f"Config file [{configfile}] is not found")
 
+    # connect to mongo necessary mongo stores
     gdrive_mongo_store = MongograntStore(mongogrant_spec="rw:knowhere.lbl.gov/mp_core_mwu",
                                          collection_name="gdrive",
                                          mgclient_config_path=configfile.as_posix())
@@ -266,10 +267,30 @@ def find_unuploaded_launcher_paths(outputfile, configfile, num):
     gdrive_mongo_store.connect()
     material_mongo_store.connect()
     tasks_mongo_store.connect()
+    logger.info("gdrive, material, and tasks mongo store successfully connected")
 
+    # find un-uploaded materials task ids
     task_ids: List[str] = find_un_uploaded_materials_task_id(gdrive_mongo_store, material_mongo_store, max_num=num)
-    logger.info(task_ids)
-    logger.info("Stores connected")
+    logger.info(f"Processing [{len(task_ids)}] task_ids")
+
+    if run:
+        if outputfile.exists():
+            logger.info(f"Will be over writing {outputfile}")
+        else:
+            logger.info(f"[{outputfile}] does not exist, creating...")
+            outputfile.parent.mkdir(exist_ok=True, parents=True)
+        # find launcher paths
+        tasks = tasks_mongo_store.query(criteria={"task_id": {"$in": task_ids}},
+                                        properties={"task_id": 1, "dir_name": 1})
+        logger.info(f"Writing [{len(list(tasks))}] to [{outputfile.as_posix()}]")
+        output_file_stream = outputfile.open('w')
+        for task in tasks:
+            dir_name: str = task["dir_name"]
+            start = dir_name.find("block_")
+            dir_name = dir_name[start:]
+            output_file_stream.write(dir_name + "\n")
+    else:
+        logger.info(f"Run flag not provided, will not write anything to file.")
     return ReturnCodes.SUCCESS
 
 
