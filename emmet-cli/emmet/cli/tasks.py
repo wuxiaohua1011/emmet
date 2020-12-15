@@ -262,8 +262,6 @@ def find_unuploaded_launcher_paths(outputfile, configfile, num):
     gdrive_mongo_store = MongograntStore(mongogrant_spec="rw:knowhere.lbl.gov/mp_core_mwu",
                                          collection_name="gdrive",
                                          mgclient_config_path=configfile.as_posix())
-
-
     material_mongo_store = MongograntStore(mongogrant_spec="ro:mongodb04.nersc.gov/mp_emmet_prod",
                                            collection_name="materials_2020_09_08",
                                            mgclient_config_path=configfile.as_posix())
