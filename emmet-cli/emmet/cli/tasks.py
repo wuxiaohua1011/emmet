@@ -17,12 +17,13 @@ from emmet.cli.utils import VaspDirsGenerator, EmmetCliError, ReturnCodes
 from emmet.cli.utils import ensure_indexes, get_subdir, parse_vasp_dirs
 from emmet.cli.utils import chunks, iterator_slice
 from emmet.cli.decorators import sbatch
-from emmet.cli.utils import organize_path, compress_launchers
+from emmet.cli.utils import organize_path, compress_launchers, find_un_uploaded_materials_task_id
 
 import datetime
 from typing import List, Dict
 from pathlib import Path
 from maggma.stores.advanced_stores import MongograntStore
+
 
 logger = logging.getLogger("emmet")
 GARDEN = "/home/m/matcomp/garden"
@@ -266,6 +267,8 @@ def find_unuploaded_launcher_paths(outputfile, configfile, num):
     material_mongo_store.connect()
     tasks_mongo_store.connect()
 
+    task_ids: List[str] = find_un_uploaded_materials_task_id(gdrive_mongo_store, material_mongo_store, max_num=num)
+    logger.info(task_ids)
     logger.info("Stores connected")
     return ReturnCodes.SUCCESS
 
