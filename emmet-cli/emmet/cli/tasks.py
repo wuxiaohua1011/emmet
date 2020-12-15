@@ -282,13 +282,16 @@ def find_unuploaded_launcher_paths(outputfile, configfile, num):
         # find launcher paths
         tasks = tasks_mongo_store.query(criteria={"task_id": {"$in": task_ids}},
                                         properties={"task_id": 1, "dir_name": 1})
-        logger.info(f"Writing [{len(list(tasks))}] to [{outputfile.as_posix()}]")
+        logger.info(f"Writing [{len(list(tasks))}] launcher paths to [{outputfile.as_posix()}]")
         output_file_stream = outputfile.open('w')
         for task in tasks:
             dir_name: str = task["dir_name"]
             start = dir_name.find("block_")
             dir_name = dir_name[start:]
-            output_file_stream.write(dir_name + "\n")
+            line = dir_name + "\n"
+            logger.info(line)
+            output_file_stream.write(line)
+        output_file_stream.close()
     else:
         logger.info(f"Run flag not provided, will not write anything to file.")
     return ReturnCodes.SUCCESS
