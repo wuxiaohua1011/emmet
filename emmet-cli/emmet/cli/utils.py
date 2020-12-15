@@ -501,7 +501,7 @@ def find_un_uploaded_materials_task_id(gdrive_mongo_store: MongograntStore,
     # remove any of them that are already in the gdrive store
     gdrive_mp_ids = set(gdrive_mongo_store.query(criteria={"mp_id": {"$in": list(result)}}, properties={"mp_id": 1}))
     result = result.difference(gdrive_mp_ids)
-    print(len(result))
+    print(len(result), max_num)
     retry = 0  # if there are really no more materials to add, just exit
     while len(result) < max_num and retry < 5:
         # fetch again from materials mongo store if there are more space
