@@ -247,6 +247,16 @@ def backup(clean, check):
     help="maximum number of materials to query"
 )
 def find_unuploaded_launcher_paths(outputfile, configfile, num):
+    """
+    Find launcher paths that has not been uploaded
+    Prioritize for blessed tasks and recent materials
+
+    :param outputfile: outputfile to write the launcher paths to
+    :param configfile: config file for mongodb
+    :param num: maximum number of materials to consider in this run
+    :return:
+        Success
+    """
     ctx = click.get_current_context()
     run = ctx.parent.parent.params["run"]
     outputfile: Path = Path(outputfile)
@@ -280,16 +290,15 @@ def find_unuploaded_launcher_paths(outputfile, configfile, num):
             logger.info(f"[{outputfile}] does not exist, creating...")
             outputfile.parent.mkdir(exist_ok=True, parents=True)
         # find launcher paths
-        tasks = list(tasks_mongo_store.query(criteria={"task_id": {"$in": task_ids}},
+        task_records = list(tasks_mongo_store.query(criteria={"task_id": {"$in": task_ids}},
                                         properties={"task_id": 1, "dir_name": 1}))
-        logger.info(f"Writing [{len(tasks)}] launcher paths to [{outputfile.as_posix()}]")
+        logger.info(f"Writing [{len(task_records)}] launcher paths to [{outputfile.as_posix()}]")
         output_file_stream = outputfile.open('w')
-        for task in tasks:
+        for task in task_records:
             dir_name: str = task["dir_name"]
             start = dir_name.find("block_")
             dir_name = dir_name[start:]
             line = dir_name + "\n"
-            logger.info(line)
             output_file_stream.write(line)
         output_file_stream.close()
     else:
