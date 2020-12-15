@@ -239,7 +239,7 @@ def backup(clean, check):  # noqa: C901
 @click.option(
     "--configfile",
     required=True,
-    default="~/.mongogrant.json",
+    default=(Path().expanduser() / ".mongogrant.json"),
     type=click.Path(),
     help="mongo db connections. Path should be full path."
 )
