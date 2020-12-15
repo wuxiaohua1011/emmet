@@ -291,6 +291,7 @@ def find_unuploaded_launcher_paths(outputfile, configfile, num):
         logger.info(f"Writing [{len(list(tasks))}] launcher paths to [{outputfile.as_posix()}]")
         output_file_stream = outputfile.open('w')
         for task in tasks:
+            print(task)
             dir_name: str = task["dir_name"]
             start = dir_name.find("block_")
             dir_name = dir_name[start:]
