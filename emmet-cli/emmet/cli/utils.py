@@ -29,6 +29,9 @@ from typing import List, Dict
 import tarfile
 import subprocess, shlex
 from pydantic import BaseModel, Field
+from typing import List, Dict, Set
+from maggma.stores.advanced_stores import MongograntStore
+from maggma.core.store import Sort
 
 logger = logging.getLogger("emmet")
 perms = stat.S_IRUSR | stat.S_IWUSR | stat.S_IRGRP | stat.S_IWGRP
@@ -515,8 +518,61 @@ def compress_launchers(input_dir: Path, output_dir: Path, block_name: str, launc
                       source_dir=source_dir)
 
 
+def find_un_uploaded_materials_task_id(gdrive_mongo_store: MongograntStore,
+                                       material_mongo_store: MongograntStore,
+                                       max_num: int = 1000) -> List[str]:
+    """
+    Given mongo stores, find the next max_num mp_ids that are not yet uploaded.
+
+    :param gdrive_mongo_store: gdrive mongo store
+    :param material_mongo_store: materials mongo store
+    :param max_num: int, maximum number of materials to return
+    :return:
+        list of materials that are not uploaded
+    """
+
+    # fetch max_num materials from materials mongo store
+    materials: List[str] = find_materials_task_id_helper(material_mongo_store=material_mongo_store,
+                                                         max_num=max_num, exclude_list=[])
+    result: Set[str] = set(materials)
+    # remove any of them that are already in the gdrive store
+    gdrive_mp_ids = set(gdrive_mongo_store.query(criteria={"mp_id": {"$in": list(result)}}, properties={"mp_id": 1}))
+    result = result.difference(gdrive_mp_ids)
+    retry = 0  # if there are really no more materials to add, just exit
+    while len(result) < max_num and retry < 5:
+        # fetch again from materials mongo store if there are more space
+        materials: List[str] = find_materials_task_id_helper(material_mongo_store=material_mongo_store,
+                                                             max_num=max_num, exclude_list=list(result))
+
+        # remove any of them that are not in gdrive store
+        result = set(materials)
+        # remove any of them that are already in the gdrive store
+        gdrive_mp_ids = set(
+            gdrive_mongo_store.query(criteria={"mp_id": {"$in": list(result)}}, properties={"mp_id": 1}))
+        result = result.difference(gdrive_mp_ids)
+        retry += 1
+    return list(result)
+
+
+def find_materials_task_id_helper(material_mongo_store, max_num, exclude_list=None) -> List[str]:
+    if exclude_list is None:
+        exclude_list = []
+    result: List[str] = []
+    materials = material_mongo_store.query(criteria={"$and": [
+        {"deprecated": False}, {"material_id": {"$nin": exclude_list}}]},
+        properties={"task_id": 1, "blessed_tasks": 1,
+                    "last_updated": 1},
+        sort={"last_updated": Sort.Descending},
+        limit=max_num)
+    for material in materials:
+        if "blessed_tasks" in material:
+            blessed_tasks: dict = material["blessed_tasks"]
+            result.extend(list(blessed_tasks.values()))
+    return result
+
 class GDriveLog(BaseModel):
     path: str = Field(..., title="Path for the file",
                       description="Should reflect both local disk space AND google drive path")
     last_updated: datetime = Field(default=datetime.now())
     created_at: datetime = Field(default=datetime.now())
+    mp_id: str = Field(..., title="Material ID in which this launcher belongs to")
