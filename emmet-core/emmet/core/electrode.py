@@ -3,6 +3,11 @@ from typing import Dict, List, Union
 
 from monty.json import MontyDecoder
 from pydantic import BaseModel, Field, validator
+from typing import Dict, Iterable, List
+
+from monty.json import MontyDecoder
+from pydantic import BaseModel, Field, validator
+from pymatgen import Composition
 from pymatgen.apps.battery.battery_abc import AbstractElectrode
 from pymatgen.apps.battery.conversion_battery import ConversionElectrode
 from pymatgen.apps.battery.insertion_battery import InsertionElectrode
@@ -12,6 +17,13 @@ from pymatgen.entries.computed_entries import ComputedEntry
 
 from emmet.core.mpid import MPID
 from emmet.core.utils import jsanitize
+from emmet.stubs.structure import Structure
+
+
+class WorkingIon(ElementBase):
+    Li = "Li"
+    Ca = "Ca"
+    Mg = "Mg"
 
 
 class VoltagePairDoc(BaseModel):
@@ -270,3 +282,64 @@ class ConversionElectrodeDoc(ConversionVoltagePairDoc):
         d["num_steps"] = d.pop("nsteps", None)
         d["last_updated"] = datetime.utcnow()
         return cls(task_id=task_id, framework=Composition(d["framework_formula"]), **d)
+
+
+class ConversionVoltagePairDoc(VoltagePairDoc):
+    """
+    Features specific to conversion electrode
+    """
+
+    reactions: List[str] = Field(
+        None,
+        description="The reaction(s) the characterizes that particular voltage step.",
+    )
+
+
+class ConversionElectrodeDoc(ConversionVoltagePairDoc):
+    task_id: str = Field(None, description="The id for this battery document.")
+
+    adj_pairs: List[ConversionVoltagePairDoc] = Field(
+        None, description="Returns all the adjacent Voltage Steps",
+    )
+
+    working_ion: WorkingIon = Field(
+        None, description="The working ion as an Element object",
+    )
+
+    num_steps: float = Field(
+        None,
+        description="The number of distinct voltage steps in from fully charge to "
+        "discharge based on the stable intermediate states",
+    )
+
+    max_voltage_step: float = Field(
+        None, description="Maximum absolute difference in adjacent voltage steps"
+    )
+
+    last_updated: datetime = Field(
+        None,
+        description="Timestamp for the most recent calculation for this Material document",
+    )
+
+    # Make sure that the datetime field is properly formatted
+    @validator("last_updated", pre=True)
+    def last_updated_dict_ok(cls, v):
+        return MontyDecoder().process_decoded(v)
+
+    @classmethod
+    def from_composition_and_entries(
+        cls,
+        composition: Composition,
+        entries: List[ComputedEntry],
+        working_ion_symbol: str,
+        task_id: str,
+    ):
+        print([ient.composition.reduced_formula for ient in entries])
+        ce = ConversionElectrode.from_composition_and_entries(
+            comp=composition,
+            entries_in_chemsys=entries,
+            working_ion_symbol=working_ion_symbol,
+        )
+        d = ce.get_summary_dict()
+        d["num_steps"] = d.pop("nsteps", None)
+        return cls(task_id=task_id, **d)
