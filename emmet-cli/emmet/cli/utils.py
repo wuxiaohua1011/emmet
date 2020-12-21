@@ -496,6 +496,7 @@ def organize_path(paths: List[str]) -> Dict[str, List[str]]:
     :return:
         dictionary of dir to zip path
     """
+    print(paths)
     result: Dict[str, List[str]] = dict()
 
     for path in sorted(paths, key=len):
@@ -515,25 +516,6 @@ def organize_path(paths: List[str]) -> Dict[str, List[str]]:
         #     result[block_name] = list_of_launchers
     return result
 
-
-def organize_launchers(block_name: str, launcher_names: List[str]) -> List[str]:
-    """
-    turn [launcher-xxx, launcher-yyy, launcher-ccc] into
-    [block_name/launcher-xxx, block_name/launcher-xxx/launcher-yyy, block_name/launcher-xxx/launcher-yyy/launcher-ccc]
-
-    :param block_name: used to prepend block name
-    :param launcher_names: list of launcher names
-    :return: list of launcher names
-
-    """
-    print(launcher_names)
-    result: List[str] = []
-    prev_name = block_name
-    for launcher_name in launcher_names:
-        curr_name = prev_name + "/" + launcher_name
-        result.append(curr_name)
-        prev_name = curr_name
-    return result
 
 
 def compress_launchers(input_dir: Path, output_dir: Path, launcher_paths: List[str]):
