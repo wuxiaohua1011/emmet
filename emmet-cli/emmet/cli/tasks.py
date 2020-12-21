@@ -702,9 +702,10 @@ def upload_latest(mongo_configfile, num_materials):
     run_and_log_info(args=upload_cmds)
 
     # move uploaded, compressed content to tmp_longterm storage
-    move_dir(src=(full_root_dir / "compressed").as_posix(),
-             dst=(full_root_dir / "tmp_storage").as_posix(),
-             pattern="block*")
+    mv_cmds = ["rclone", "move",
+               f"{(full_root_dir / 'compressed').as_posix()}",
+               f"{(full_root_dir / 'tmp_storage').as_posix()}"]
+    run_and_log_info(args=mv_cmds)
 
     # run clean up command
 
