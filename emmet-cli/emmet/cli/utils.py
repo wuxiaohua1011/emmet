@@ -462,13 +462,12 @@ def organize_path(paths: List[str]) -> Dict[str, List[str]]:
     for path in sorted(paths, key=len):
         splitted: List[str] = path.split("/")
         key, val = splitted[0], splitted[-1]
-
         if key in result:
             for curr_val in result[key]:
+                print(val, curr_val)
                 if val in curr_val:
                     continue
             result[key].append(path)
-
         else:
             result[key] = [path]
     return result
