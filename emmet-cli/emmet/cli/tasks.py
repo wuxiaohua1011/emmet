@@ -437,24 +437,13 @@ def restore(inputfile, file_filter):  # noqa: C901
     type=click.Path(exists=False),
     help="Directory of blocks to upload to GDrive, relative to ('directory') ex: compressed",
 )
-@click.option(
-    "-o",
-    "--output-dir",
-    required=False,
-    default=TMP_STORAGE,
-    show_default=True,
-    type=click.Path(exists=False),
-    help="Directory to move the data to after upload is done, relative to ('directory'). ex: temp_storage"
-         "Not moving if it is not supplied",
-)
-def upload(input_dir, output_dir):
+def upload(input_dir):
     ctx = click.get_current_context()
     run = ctx.parent.parent.params["run"]
     nmax = ctx.parent.params["nmax"]
     pattern = ctx.parent.params["pattern"]
     directory = ctx.parent.params["directory"]
     full_input_dir: Path = (Path(directory) / input_dir)
-    # full_output_dir: Path = (Path(directory) / output_dir)
     if full_input_dir.exists() is False:
         raise FileNotFoundError(f"input_dir {full_input_dir.as_posix()} not found")
     block_count = 0
@@ -474,19 +463,17 @@ def upload(input_dir, output_dir):
             full_input_dir.as_posix(),
             "GDriveUpload:"]
     if run:
-        # if full_output_dir.exists() is False:
-        #     full_output_dir.mkdir(exist_ok=True, parents=True)
         run_outputs = run_command(args=cmds, filelist=[])
         for run_output in run_outputs:
-            logger.info(run_output)
+            logger.info(run_output.strip())
 
-        logger.info(msg=base_msg)
+        logger.info(msg=base_msg.strip())
     else:
         cmds.extend(["-n", "--dry-run"])
         run_outputs = run_command(args=cmds, filelist=[])
         for run_output in run_outputs:
             logger.info(run_output)
-        logger.info(msg="would have " + base_msg)
+        logger.info(msg=("would have " + base_msg).strip())
 
     return ReturnCodes.SUCCESS
 
@@ -749,7 +736,7 @@ def upload_latest(mongo_configfile, num_materials):
 
     # run compressed cmd
     compress_cmds = base_cmds + ["compress", "-l", "raw", "-o", "compressed", "--nproc", "4"]
-    logger.info(f"Compressing using command [{' '.join(compress_cmds)}]")
+    logger.info(f"Compressing using command [{' '.join(compress_cmds)}]".strip())
     run_and_log_info(args=compress_cmds)
 
     # run upload cmd
@@ -757,7 +744,7 @@ def upload_latest(mongo_configfile, num_materials):
     logger.info(f"Uploading using command [{' '.join(upload_cmds)}]")
     run_and_log_info(args=upload_cmds)
 
-    # move uploaded, compressed content to tmp_longterm storage
+    # move uploaded, compressed content to tmp long term storage
     mv_cmds = ["rclone", "move",
                f"{(full_root_dir / 'compressed').as_posix()}",
                f"{(full_root_dir / 'tmp_storage').as_posix()}",
@@ -765,7 +752,9 @@ def upload_latest(mongo_configfile, num_materials):
     run_and_log_info(args=mv_cmds)
 
     # run clean up command
-
+    # DANGEROUS!!
+    remove_raw = ["rclone", "purge", f"{(full_root_dir/'raw').as_posix()}"]
+    run_and_log_info(args=remove_raw)
     return ReturnCodes.SUCCESS
 
 
@@ -774,4 +763,4 @@ def run_and_log_info(args, filelist=None):
         filelist = []
     run_outputs = run_command(args=args, filelist=filelist)
     for run_output in run_outputs:
-        logger.info(run_output)
+        logger.info(run_output.strip())
