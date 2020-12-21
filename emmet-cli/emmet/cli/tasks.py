@@ -509,11 +509,12 @@ def compress(input_dir, output_dir, nproc):
     ctx = click.get_current_context()
     run = ctx.parent.parent.params["run"]
     directory = ctx.parent.params["directory"]
-    root_dir: Path = (Path(directory) / input_dir)
-    if root_dir.exists() is False:
-        raise FileNotFoundError(f"input_dir {root_dir.as_posix()} not found")
+    full_input_dir: Path = (Path(directory) / input_dir)
+    full_output_dir: Path = (Path(directory) / output_dir)
+    if full_input_dir.exists() is False:
+        raise FileNotFoundError(f"input_dir {full_input_dir.as_posix()} not found")
     paths: List[str] = []
-    for root, dirs, files in os.walk(root_dir.as_posix()):
+    for root, dirs, files in os.walk(full_input_dir.as_posix()):
         for name in dirs:
             if "launcher" in name:
                 dir_name = os.path.join(root, name)
@@ -523,8 +524,10 @@ def compress(input_dir, output_dir, nproc):
     paths_organized: Dict[str, List[str]] = organize_path(paths)
     msg = f"compressed [{len(paths_organized)}] blocks with [{len(paths)}] launchers"
     if run:
+        if not full_output_dir.exists():
+            full_output_dir.mkdir(parents=True, exist_ok=True)
         pool = multiprocessing.Pool(processes=nproc)
-        pool.starmap(func=compress_launchers, iterable=[(Path(input_dir), Path(output_dir), launcher_paths)
+        pool.starmap(func=compress_launchers, iterable=[(Path(full_input_dir), Path(full_output_dir), launcher_paths)
                                                         for block_name, launcher_paths in paths_organized.items()])
         # for block_name, launcher_paths in paths_organized.items():
         #     compress_launchers(input_dir=Path(input_dir), output_dir=Path(output_dir),
