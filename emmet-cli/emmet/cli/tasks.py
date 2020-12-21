@@ -17,7 +17,7 @@ from emmet.cli.utils import VaspDirsGenerator, EmmetCliError, ReturnCodes
 from emmet.cli.utils import ensure_indexes, get_subdir, parse_vasp_dirs
 from emmet.cli.utils import chunks, iterator_slice
 from emmet.cli.decorators import sbatch
-from emmet.cli.utils import compress_launchers, find_un_uploaded_materials_task_id, move_dir,GDriveLog
+from emmet.cli.utils import compress_launchers, find_un_uploaded_materials_task_id, move_dir, GDriveLog
 
 import datetime
 from typing import List, Dict
@@ -228,30 +228,6 @@ def backup(clean, check):  # noqa: C901
     return ReturnCodes.SUCCESS
 
 
-@tasks.command()
-@sbatch
-@click.option(
-    "-o",
-    "--outputfile",
-    required=True,
-    type=click.Path(),
-    help="file to save the content to. Path should be full path."
-)
-@click.option(
-    "--configfile",
-    required=False,
-    default=Path("~/.mongogrant.json").expanduser().as_posix(),
-    type=click.Path(),
-    help="mongo db connections. Path should be full path."
-)
-@click.option(
-    "-n",
-    "--num",
-    required=False,
-    default=1000,
-    type=click.IntRange(min=0, max=1000),
-    help="maximum number of materials to query"
-)
 def find_unuploaded_launcher_paths(outputfile, configfile, num):
     """
     Find launcher paths that has not been uploaded
@@ -263,8 +239,6 @@ def find_unuploaded_launcher_paths(outputfile, configfile, num):
     :return:
         Success
     """
-    ctx = click.get_current_context()
-    run = ctx.parent.parent.params["run"]
     outputfile: Path = Path(outputfile)
     configfile: Path = Path(configfile)
     if configfile.exists() is False:
@@ -289,27 +263,24 @@ def find_unuploaded_launcher_paths(outputfile, configfile, num):
     task_ids: List[str] = find_un_uploaded_materials_task_id(gdrive_mongo_store, material_mongo_store, max_num=num)
     logger.info(f"Found [{len(task_ids)}] task_ids for [{num}] materials")
 
-    if run:
-        if outputfile.exists():
-            logger.info(f"Will be over writing {outputfile}")
-        else:
-            logger.info(f"[{outputfile}] does not exist, creating...")
-            outputfile.parent.mkdir(exist_ok=True, parents=True)
-        # find launcher paths
-        task_records = list(tasks_mongo_store.query(criteria={"task_id": {"$in": task_ids}},
-                                                    properties={"task_id": 1, "dir_name": 1}))
-        logger.info(f"Writing [{len(task_records)}] launcher paths to [{outputfile.as_posix()}]")
-        output_file_stream = outputfile.open('w')
-        for task in task_records:
-            dir_name: str = task["dir_name"]
-            start = dir_name.find("block_")
-            dir_name = dir_name[start:]
-            line = dir_name + "\n"
-            output_file_stream.write(line)
-        output_file_stream.close()
+    if outputfile.exists():
+        logger.info(f"Will be over writing {outputfile}")
     else:
-        logger.info(f"Run flag not provided, will not write anything to file.")
-    return ReturnCodes.SUCCESS
+        logger.info(f"[{outputfile}] does not exist, creating...")
+        outputfile.parent.mkdir(exist_ok=True, parents=True)
+    # find launcher paths
+    task_records = list(tasks_mongo_store.query(criteria={"task_id": {"$in": task_ids}},
+                                                properties={"task_id": 1, "dir_name": 1}))
+    logger.info(f"Writing [{len(task_records)}] launcher paths to [{outputfile.as_posix()}]")
+    output_file_stream = outputfile.open('w')
+    for task in task_records:
+        dir_name: str = task["dir_name"]
+        start = dir_name.find("block_")
+        dir_name = dir_name[start:]
+        line = dir_name + "\n"
+        output_file_stream.write(line)
+    output_file_stream.close()
+    return task_records
 
 
 @tasks.command()
@@ -716,16 +687,14 @@ def upload_latest(mongo_configfile, num_materials):
     full_mongo_config_path: Path = Path(mongo_configfile).expanduser()
     full_emmet_input_file_path: Path = full_root_dir / "emmet_input_file.txt"
 
-    # base_cmds = ["emmet", "--run", "--yes", "--issue", "87", "tasks", "-d", full_root_dir.as_posix()]
-    #
-    # # find all un-uploaded launchers
-    # find_unuploaded_launcher_paths_cmds = base_cmds + ["find-unuploaded-launcher-paths",
-    #                                                    "-o", full_emmet_input_file_path.as_posix(),
-    #                                                    "--configfile", full_mongo_config_path.as_posix(),
-    #                                                    "-n", str(num_materials)]
-    # logger.info(f"Finding un-uploaded launcher paths using command [{''.join(find_unuploaded_launcher_paths_cmds)}]")
-    # run_and_log_info(args=find_unuploaded_launcher_paths_cmds)
-    #
+    base_cmds = ["emmet", "--run", "--yes", "--issue", "87", "tasks", "-d", full_root_dir.as_posix()]
+
+    # find all un-uploaded launchers
+    task_records: List[dict] = find_unuploaded_launcher_paths(outputfile=full_emmet_input_file_path.as_posix(),
+                                                              configfile=full_mongo_config_path.as_posix(),
+                                                              num=num_materials)
+    print(task_records)
+
     # # restore
     # restore_cmds = base_cmds + ["restore", "--inputfile", full_emmet_input_file_path.as_posix()]
     # logger.info(f"Restoring using command [{' '.join(restore_cmds)}]")
@@ -743,25 +712,11 @@ def upload_latest(mongo_configfile, num_materials):
     # upload_cmds = base_cmds + ["upload", "--input-dir", "compressed"]
     # logger.info(f"Uploading using command [{' '.join(upload_cmds)}]")
     # run_and_log_info(args=upload_cmds)
+    #
+    # # log to mongodb
+    # log_to_mongodb(mongo_configfile=mongo_configfile, full_root_dir=full_root_dir)
 
-    # log to mongodb
-    configfile: Path = Path(mongo_configfile)
-    gdrive_mongo_store = MongograntStore(mongogrant_spec="rw:knowhere.lbl.gov/mp_core_mwu",
-                                         collection_name="gdrive",
-                                         mgclient_config_path=configfile.as_posix())
-    gdrive_mongo_store.connect()
-    records_to_update: List[GDriveLog] = []
-    for root, dirs, files in os.walk((full_root_dir/"compressed").as_posix()):
-        for file in files:
-            full_gz_path = (Path(root) / file).as_posix()
-            path = full_gz_path[full_gz_path.find("block"):]
-            gdrive_log: GDriveLog = GDriveLog(path=path)
-            logger.info(f"Updating {gdrive_log}")
-            records_to_update.append(gdrive_log)
-
-    gdrive_mongo_store.update(docs=[record.dict() for record in records_to_update], key="path")
-
-    # # move uploaded, compressed content to tmp long term storage
+    # # move uploaded & compressed content to tmp long term storage
     # mv_cmds = ["rclone", "move",
     #            f"{(full_root_dir / 'compressed').as_posix()}",
     #            f"{(full_root_dir / 'tmp_storage').as_posix()}",
@@ -773,6 +728,25 @@ def upload_latest(mongo_configfile, num_materials):
     # remove_raw = ["rclone", "purge", f"{(full_root_dir/'raw').as_posix()}"]
     # run_and_log_info(args=remove_raw)
     return ReturnCodes.SUCCESS
+
+
+def log_to_mongodb(mongo_configfile: str, full_root_dir: Path):
+    configfile: Path = Path(mongo_configfile)
+    gdrive_mongo_store = MongograntStore(mongogrant_spec="rw:knowhere.lbl.gov/mp_core_mwu",
+                                         collection_name="gdrive",
+                                         mgclient_config_path=configfile.as_posix())
+    gdrive_mongo_store.connect()
+    records_to_update: List[GDriveLog] = []
+    for root, dirs, files in os.walk((full_root_dir / "compressed").as_posix()):
+        for file in files:
+            full_gz_path = (Path(root) / file).as_posix()
+            path = full_gz_path[full_gz_path.find("block"):]
+            gdrive_log: GDriveLog = GDriveLog(path=path)
+            logger.info(f"Updating {gdrive_log.path}")
+            records_to_update.append(gdrive_log)
+
+    gdrive_mongo_store.update(docs=[record.dict() for record in records_to_update], key="path")
+    logger.info(f"[{gdrive_mongo_store.collection_name}] Collection Updated")
 
 
 def run_and_log_info(args, filelist=None):
