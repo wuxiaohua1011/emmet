@@ -17,13 +17,14 @@ from emmet.cli.utils import VaspDirsGenerator, EmmetCliError, ReturnCodes
 from emmet.cli.utils import ensure_indexes, get_subdir, parse_vasp_dirs
 from emmet.cli.utils import chunks, iterator_slice
 from emmet.cli.decorators import sbatch
-from emmet.cli.utils import compress_launchers, find_un_uploaded_materials_task_id
+from emmet.cli.utils import compress_launchers, find_un_uploaded_materials_task_id, move_dir
 
 import datetime
 from typing import List, Dict
 from pathlib import Path
 from maggma.stores.advanced_stores import MongograntStore
 import glob
+
 logger = logging.getLogger("emmet")
 GARDEN = "/home/m/matcomp/garden"
 PREFIX = "block_"
@@ -444,7 +445,7 @@ def upload(input_dir, output_dir):
     pattern = ctx.parent.params["pattern"]
     directory = ctx.parent.params["directory"]
     full_input_dir: Path = (Path(directory) / input_dir)
-    full_output_dir: Path = (Path(directory) / output_dir)
+    # full_output_dir: Path = (Path(directory) / output_dir)
     if full_input_dir.exists() is False:
         raise FileNotFoundError(f"input_dir {full_input_dir.as_posix()} not found")
     block_count = 0
@@ -464,8 +465,8 @@ def upload(input_dir, output_dir):
             full_input_dir.as_posix(),
             "GDriveUpload:"]
     if run:
-        if full_output_dir.exists() is False:
-            full_output_dir.mkdir(exist_ok=True, parents=True)
+        # if full_output_dir.exists() is False:
+        #     full_output_dir.mkdir(exist_ok=True, parents=True)
         run_outputs = run_command(args=cmds, filelist=[])
         for run_output in run_outputs:
             logger.info(run_output)
@@ -688,10 +689,7 @@ def upload_latest(mongo_configfile, num_materials):
     logger.info("DBUGGING, NOT EXECUTING")
 
     # move restored content to directory/raw
-    dest_path = (full_root_dir / 'raw').as_posix()
-    for file_path in glob.glob(f'{full_root_dir.as_posix()}/block*'):
-        logger.info(f"Moving [{file_path}] to [{dest_path}]")
-        shutil.move(src=file_path, dst=f"{dest_path}")
+    move_dir(src=full_root_dir.as_posix(), dst=(full_root_dir / 'raw').as_posix(), pattern="block*")
 
     # run compressed cmd
     compress_cmds = base_cmds + ["compress", "-l", "raw", "-o", "compressed", "--nproc", "4"]
@@ -699,6 +697,14 @@ def upload_latest(mongo_configfile, num_materials):
     run_and_log_info(args=compress_cmds)
 
     # run upload cmd
+    upload_cmds = base_cmds + ["upload", "--input-dir", "compressed"]
+    logger.info(f"Uploading using command [{' '.join(upload_cmds)}]")
+    run_and_log_info(args=upload_cmds)
+
+    # move uploaded, compressed content to tmp_longterm storage
+    move_dir(src=(full_root_dir / "compressed").as_posix(),
+             dst=(full_root_dir / "tmp_storage").as_posix(),
+             pattern="block*")
 
     # run clean up command
 
