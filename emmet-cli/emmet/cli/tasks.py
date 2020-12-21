@@ -528,7 +528,7 @@ def compress(input_dir, output_dir, nproc):
 
         pool = multiprocessing.Pool(processes=nproc)
         pool.starmap(func=compress_launchers, iterable=[(Path(full_input_dir), Path(full_output_dir), launcher_paths)
-                                                        for launcher_paths in chunks(paths, n=nproc)])
+                                                        for launcher_paths in chunks(sorted(paths, key=len), n=nproc)])
         logger.info(msg=msg)
     else:
         logger.info(msg="would have " + msg)
