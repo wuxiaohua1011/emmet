@@ -531,16 +531,13 @@ def compress(input_dir, output_dir, nproc):
                 dir_name = dir_name[start:]
                 paths.append(dir_name)
     paths_organized: Dict[str, List[str]] = organize_path(paths)
-    msg = f"compressed [{len(paths_organized)}] blocks with [{len(paths)}] launchers"
+    msg = f"compressed {len(paths_organized.values())}] launchers"
     if run:
         if not full_output_dir.exists():
             full_output_dir.mkdir(parents=True, exist_ok=True)
         pool = multiprocessing.Pool(processes=nproc)
         pool.starmap(func=compress_launchers, iterable=[(Path(full_input_dir), Path(full_output_dir), launcher_paths)
                                                         for block_name, launcher_paths in paths_organized.items()])
-        # for block_name, launcher_paths in paths_organized.items():
-        #     compress_launchers(input_dir=Path(input_dir), output_dir=Path(output_dir),
-        #                        block_name=block_name, launcher_paths=launcher_paths)
         logger.info(msg=msg)
     else:
         logger.info(msg="would have " + msg)
