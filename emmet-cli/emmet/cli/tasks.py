@@ -521,6 +521,7 @@ def compress(input_dir, output_dir, nproc):
                 start = dir_name.find("block_")
                 dir_name = dir_name[start:]
                 paths.append(dir_name)
+
     path_organized_by_blocks: Dict[str, List[str]] = dict()
     for path in paths:
         block_name = path.split("/")[0]
@@ -646,3 +647,10 @@ def parse(task_ids, nproc, store_volumetric_data):
         logger.info(f"Would parse and insert {count}/{gen.value} tasks in {directory}.")
     return ReturnCodes.SUCCESS if count and gen.value else ReturnCodes.WARNING
 
+@tasks.command()
+@sbatch
+def upload_latest():
+    scratch_dir = os.environ.get("$SCRATCH", "/global/cscratch1/sd/mwu1011")
+    find_unuploaded_launcher_paths(outputfile=scratch_dir + "/projects/emmet_input_file.txt",
+                                   configfile=Path("~/.mongogrant.json").expanduser().as_posix(), num=1000)
+    print("DONE")
