@@ -23,7 +23,7 @@ import datetime
 from typing import List, Dict
 from pathlib import Path
 from maggma.stores.advanced_stores import MongograntStore
-
+import glob
 logger = logging.getLogger("emmet")
 GARDEN = "/home/m/matcomp/garden"
 PREFIXES = ["res_", "aflow_", "block_"]
@@ -744,7 +744,10 @@ def upload_latest(mongo_configfile, num_materials):
     logger.info("DBUGGING, NOT EXECUTING")
 
     # move restored content to directory/raw
-    shutil.move(src=f"{full_root_dir.as_posix()}/block*", dst=f"{(full_root_dir/'raw').as_posix()}")
+    dest_path = (full_root_dir / 'raw').as_posix()
+    for file_path in glob.glob(f'{full_root_dir.as_posix()}/block*'):
+        logger.info(f"Moving [{file_path}] to [{dest_path}]")
+        shutil.move(src=file_path, dst=f"{dest_path}")
 
     # run compressed cmd
     compress_cmds = base_cmds + ["compress", "-l", "raw", "-o", "compressed", "--nproc", "4"]
