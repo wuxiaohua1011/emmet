@@ -438,14 +438,6 @@ def restore(inputfile, file_filter):  # noqa: C901
     help="Directory of blocks to upload to GDrive, relative to ('directory') ex: compressed",
 )
 @click.option(
-    "--logging-dir",
-    default=LOG_DIR,
-    required=False,
-    type=click.Path(exists=True),
-    help="Directory of logs, relative to ('directory') ex: logs",
-
-)
-@click.option(
     "-o",
     "--output-dir",
     required=False,
@@ -455,7 +447,7 @@ def restore(inputfile, file_filter):  # noqa: C901
     help="Directory to move the data to after upload is done, relative to ('directory'). ex: temp_storage"
          "Not moving if it is not supplied",
 )
-def upload(input_dir, logging_dir, output_dir):
+def upload(input_dir, output_dir):
     ctx = click.get_current_context()
     run = ctx.parent.parent.params["run"]
     nmax = ctx.parent.params["nmax"]
@@ -463,7 +455,6 @@ def upload(input_dir, logging_dir, output_dir):
     directory = ctx.parent.params["directory"]
     full_input_dir: Path = (Path(directory) / input_dir)
     full_output_dir: Path = (Path(directory) / output_dir)
-    full_logging_dir: Path = (Path(directory) / logging_dir)
     if full_input_dir.exists() is False:
         raise FileNotFoundError(f"input_dir {full_input_dir.as_posix()} not found")
     block_count = 0
@@ -702,3 +693,4 @@ def parse(task_ids, snl_metas, nproc, store_volumetric_data):  # noqa: C901
     else:
         logger.info(f"Would parse and insert {count}/{gen.value} tasks in {directory}.")
     return ReturnCodes.SUCCESS if count and gen.value else ReturnCodes.WARNING
+
