@@ -652,5 +652,6 @@ def parse(task_ids, nproc, store_volumetric_data):
 def upload_latest():
     compress_cmds = ["emmet", "--run", "--yes", "--issue", "87", "tasks", "-d", "$SCRATCH/projects",
                      "compress", "-l", "raw", "-o", "compressed", "--nproc", "4"]
+    logger.info(f"Running Compress {''.join(compress_cmds)}")
     run_command(args=compress_cmds, filelist=[])
     return ReturnCodes.SUCCESS
