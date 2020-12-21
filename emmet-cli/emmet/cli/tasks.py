@@ -720,22 +720,45 @@ def parse(task_ids, snl_metas, nproc, store_volumetric_data):  # noqa: C901
     type=click.IntRange(min=0, max=1000),
     help="maximum number of materials to query"
 )
-def upload_latest(mongo_configfile, num_materials):
+@click.option(
+    "-f",
+    "--file-filter",
+    multiple=True,
+    show_default=True,
+    default=FILE_FILTERS_DEFAULT,
+    help="Set the file filter(s) to match files against in each launcher.",
+)
+def upload_latest(mongo_configfile, num_materials, file_filter):
     ctx = click.get_current_context()
     run = ctx.parent.parent.params["run"]
     directory = ctx.parent.params["directory"]
     full_root_dir: Path = Path(directory)
     full_mongo_config_path: Path = Path(mongo_configfile).expanduser()
+    full_emmet_input_file_path: Path = full_root_dir / "emmet_input_file.txt"
 
     base_cmds = ["emmet", "--run", "--yes", "--issue", "87", "tasks", "-d", full_root_dir.as_posix()]
 
     # find all un-uploaded launchers
     find_unuploaded_launcher_paths_cmds = base_cmds + ["find-unuploaded-launcher-paths",
-                                                       "-o", (full_root_dir / "emmet_input_file.txt").as_posix(),
+                                                       "-o", full_emmet_input_file_path.as_posix(),
                                                        "--configfile", full_mongo_config_path.as_posix(),
                                                        "-n", str(num_materials)]
     logger.info(f"Finding un-uploaded launcher paths using command [{''.join(find_unuploaded_launcher_paths_cmds)}]")
     run_and_log_info(args=find_unuploaded_launcher_paths_cmds)
+
+    # restore
+    restore_cmds = base_cmds + ["restore", "--inputfile", full_emmet_input_file_path.as_posix(),
+                                "--file-filter", file_filter]
+    logger.info(f"Restoring using command [{''.join(restore_cmds)}]")
+    logger.info("DBUGGING, NOT EXECUTING")
+
+    # move restored content to directory/raw
+    move_cmds = ["rclone", "move",
+                 f"source:{full_root_dir.as_posix()}", f"dest:{(full_root_dir/'raw').as_posix()}",
+                 "--include", "block**"]
+    logger.info(f"Moving restored using command [{''.join(move_cmds)}]")
+    run_and_log_info(args=move_cmds)
+
 
     # run compressed cmd
     compress_cmds = base_cmds + ["compress", "-l", "raw", "-o", "compressed", "--nproc", "4"]
