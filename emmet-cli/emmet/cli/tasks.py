@@ -658,24 +658,26 @@ def parse(task_ids, nproc, store_volumetric_data):
 )
 @click.option(
     "-n",
-    "--num",
+    "--num-materials",
     required=False,
     default=1000,
     type=click.IntRange(min=0, max=1000),
     help="maximum number of materials to query"
 )
-def upload_latest(mongo_configfile):
+def upload_latest(mongo_configfile, num_materials):
     ctx = click.get_current_context()
     run = ctx.parent.parent.params["run"]
     directory = ctx.parent.params["directory"]
     full_root_dir: Path = Path(directory)
     full_mongo_config_path: Path = Path(mongo_configfile).expanduser()
+
     base_cmds = ["emmet", "--run", "--yes", "--issue", "87", "tasks", "-d", full_root_dir.as_posix()]
 
     # find all un-uploaded launchers
     find_unuploaded_launcher_paths_cmds = base_cmds + ["find_unuploaded_launcher_paths",
                                                        "-o", (full_root_dir / "emmet_input_file.txt").as_posix(),
-                                                       "--mongo-configfile", full_mongo_config_path.as_posix()]
+                                                       "--configfile", full_mongo_config_path.as_posix(),
+                                                       "-n", num_materials]
     logger.info(f"Finding un-uploaded launcher paths using command [{find_unuploaded_launcher_paths_cmds}]")
     run_and_log_info(args=find_unuploaded_launcher_paths_cmds)
 
