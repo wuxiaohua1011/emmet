@@ -677,8 +677,8 @@ def upload_latest(mongo_configfile, num_materials):
     find_unuploaded_launcher_paths_cmds = base_cmds + ["find_unuploaded_launcher_paths",
                                                        "-o", (full_root_dir / "emmet_input_file.txt").as_posix(),
                                                        "--configfile", full_mongo_config_path.as_posix(),
-                                                       "-n", num_materials]
-    logger.info(f"Finding un-uploaded launcher paths using command [{find_unuploaded_launcher_paths_cmds}]")
+                                                       "-n", str(num_materials)]
+    logger.info(f"Finding un-uploaded launcher paths using command [{''.join(find_unuploaded_launcher_paths_cmds)}]")
     run_and_log_info(args=find_unuploaded_launcher_paths_cmds)
 
     # run compressed cmd
