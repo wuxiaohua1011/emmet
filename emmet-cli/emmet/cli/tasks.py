@@ -730,7 +730,7 @@ def upload_latest(mongo_configfile, num_materials):
     base_cmds = ["emmet", "--run", "--yes", "--issue", "87", "tasks", "-d", full_root_dir.as_posix()]
 
     # find all un-uploaded launchers
-    find_unuploaded_launcher_paths_cmds = base_cmds + ["find_unuploaded_launcher_paths",
+    find_unuploaded_launcher_paths_cmds = base_cmds + ["find-unuploaded-launcher-paths",
                                                        "-o", (full_root_dir / "emmet_input_file.txt").as_posix(),
                                                        "--configfile", full_mongo_config_path.as_posix(),
                                                        "-n", str(num_materials)]
