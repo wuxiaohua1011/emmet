@@ -503,7 +503,7 @@ def organize_path(paths: List[str]) -> Dict[str, List[str]]:
         splitted: List[str] = path.split("/")
         key, val = "".join(splitted[:-1]), splitted[-1]
         if key in result:
-            result[key].append(val)
+            result[key].append(path)
         else:
             result[key] = [path]
 
