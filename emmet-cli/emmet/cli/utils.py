@@ -524,18 +524,6 @@ def compress_launchers(input_dir: Path, output_dir: Path, launcher_paths: List[s
                       output_file_name=launcher_path.split("/")[-1],
                       source_dir=Path(input_dir) / launcher_path)
 
-    # print(f"Compressing [{len(launcher_paths)}] launchers for [{block_name}]")
-    # logger.info(f"Compressing [{len(launcher_paths)}] launchers for [{block_name}]")
-    #
-    # print(launcher_paths)
-    # for launcher_path in launcher_paths:
-    #     source_dir = Path(input_dir) / launcher_path
-    #     # print(launcher_path)
-    #     output_dir = Path(output_dir) / block_name
-    #     # make_tar_file(output_dir=output_dir,
-    #     #               output_file_name=launcher_path.split("/")[-1],
-    #     #               source_dir=source_dir)
-
 
 def find_un_uploaded_materials_task_id(gdrive_mongo_store: MongograntStore,
                                        material_mongo_store: MongograntStore,
