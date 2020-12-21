@@ -559,3 +559,9 @@ class GDriveLog(BaseModel):
     last_updated: datetime = Field(default=datetime.now())
     created_at: datetime = Field(default=datetime.now())
     mp_id: str = Field(..., title="Material ID in which this launcher belongs to")
+
+
+def move_dir(src: str, dst: str, pattern: str):
+    for file_path in glob(f'{src}/{pattern}'):
+        logger.info(f"Moving [{file_path}] to [{dst}]")
+        shutil.move(src=file_path, dst=f"{dst}")
