@@ -481,8 +481,8 @@ def compress_launchers(input_dir: Path, output_dir: Path, launcher_paths: List[s
     :param launcher_paths:
     :return:
     """
+    logger.info(f"Compressing {launcher_paths}")
     for launcher_path in launcher_paths:
-        # print(f"output_dir = {Path(output_dir) / Path(launcher_path).parent} | source_dir = {Path(input_dir) / launcher_path}")
         make_tar_file(output_dir=Path(output_dir) / Path(launcher_path).parent,
                       output_file_name=launcher_path.split("/")[-1],
                       source_dir=Path(input_dir) / launcher_path)
