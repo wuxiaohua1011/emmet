@@ -664,15 +664,7 @@ def parse(task_ids, nproc, store_volumetric_data):
     type=click.IntRange(min=0, max=1000),
     help="maximum number of materials to query"
 )
-@click.option(
-    "-f",
-    "--file-filter",
-    multiple=True,
-    show_default=True,
-    default=FILE_FILTERS_DEFAULT,
-    help="Set the file filter(s) to match files against in each launcher.",
-)
-def upload_latest(mongo_configfile, num_materials, file_filter):
+def upload_latest(mongo_configfile, num_materials):
     ctx = click.get_current_context()
     run = ctx.parent.parent.params["run"]
     directory = ctx.parent.params["directory"]
@@ -691,8 +683,7 @@ def upload_latest(mongo_configfile, num_materials, file_filter):
     run_and_log_info(args=find_unuploaded_launcher_paths_cmds)
 
     # restore
-    restore_cmds = base_cmds + ["restore", "--inputfile", full_emmet_input_file_path.as_posix(),
-                                "--file-filter", file_filter]
+    restore_cmds = base_cmds + ["restore", "--inputfile", full_emmet_input_file_path.as_posix()]
     logger.info(f"Restoring using command [{''.join(restore_cmds)}]")
     logger.info("DBUGGING, NOT EXECUTING")
 
