@@ -704,7 +704,8 @@ def upload_latest(mongo_configfile, num_materials):
     # move uploaded, compressed content to tmp_longterm storage
     mv_cmds = ["rclone", "move",
                f"{(full_root_dir / 'compressed').as_posix()}",
-               f"{(full_root_dir / 'tmp_storage').as_posix()}"]
+               f"{(full_root_dir / 'tmp_storage').as_posix()}",
+               "--delete-empty-src-dirs"]
     run_and_log_info(args=mv_cmds)
 
     # run clean up command
