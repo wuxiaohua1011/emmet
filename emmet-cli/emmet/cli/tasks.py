@@ -221,6 +221,7 @@ def backup(clean, check):
             logger.info(f"Would verify and remove a total of {nremove_total} files.")
     return ReturnCodes.SUCCESS
 
+
 @tasks.command()
 @sbatch
 @click.option(
@@ -574,66 +575,59 @@ def upload_latest(mongo_configfile, num_materials):
     full_root_dir: Path = Path(directory)
     full_mongo_config_path: Path = Path(mongo_configfile).expanduser()
     full_emmet_input_file_path: Path = full_root_dir / "emmet_input_file.txt"
+    if run:
+        base_cmds = ["emmet", "--run", "--yes", "--issue", "87", "tasks", "-d", full_root_dir.as_posix()]
 
-    base_cmds = ["emmet", "--run", "--yes", "--issue", "87", "tasks", "-d", full_root_dir.as_posix()]
+        # find all un-uploaded launchers
+        task_records: List[GDriveLog] = find_unuploaded_launcher_paths(outputfile=full_emmet_input_file_path.as_posix(),
+                                                                       configfile=full_mongo_config_path.as_posix(),
+                                                                       num=num_materials)
 
-    # find all un-uploaded launchers
-    task_records: List[dict] = find_unuploaded_launcher_paths(outputfile=full_emmet_input_file_path.as_posix(),
-                                                              configfile=full_mongo_config_path.as_posix(),
-                                                              num=num_materials)
-    print(task_records)
+        # restore
+        restore_cmds = base_cmds + ["restore", "--inputfile", full_emmet_input_file_path.as_posix()]
+        # run_and_log_info(args=restore_cmds)
+        logger.info(f"Restoring using command [{' '.join(restore_cmds)}]")
+        logger.info("DBUGGING, NOT EXECUTING")
 
-    # # restore
-    # restore_cmds = base_cmds + ["restore", "--inputfile", full_emmet_input_file_path.as_posix()]
-    # logger.info(f"Restoring using command [{' '.join(restore_cmds)}]")
-    # logger.info("DBUGGING, NOT EXECUTING")
-    #
-    # # move restored content to directory/raw
-    # move_dir(src=full_root_dir.as_posix(), dst=(full_root_dir / 'raw').as_posix(), pattern="block*")
-    #
-    # # run compressed cmd
-    # compress_cmds = base_cmds + ["compress", "-l", "raw", "-o", "compressed", "--nproc", "4"]
-    # logger.info(f"Compressing using command [{' '.join(compress_cmds)}]".strip())
-    # run_and_log_info(args=compress_cmds)
-    #
-    # # run upload cmd
-    # upload_cmds = base_cmds + ["upload", "--input-dir", "compressed"]
-    # logger.info(f"Uploading using command [{' '.join(upload_cmds)}]")
-    # run_and_log_info(args=upload_cmds)
-    #
-    # # log to mongodb
-    # log_to_mongodb(mongo_configfile=mongo_configfile, full_root_dir=full_root_dir)
+        # move restored content to directory/raw
+        move_dir(src=full_root_dir.as_posix(), dst=(full_root_dir / 'raw').as_posix(), pattern="block*")
 
-    # # move uploaded & compressed content to tmp long term storage
-    # mv_cmds = ["rclone", "move",
-    #            f"{(full_root_dir / 'compressed').as_posix()}",
-    #            f"{(full_root_dir / 'tmp_storage').as_posix()}",
-    #            "--delete-empty-src-dirs"]
-    # run_and_log_info(args=mv_cmds)
-    #
-    # # run clean up command
-    # # DANGEROUS!!
-    # remove_raw = ["rclone", "purge", f"{(full_root_dir/'raw').as_posix()}"]
-    # run_and_log_info(args=remove_raw)
+        # run compressed cmd
+        compress_cmds = base_cmds + ["compress", "-l", "raw", "-o", "compressed", "--nproc", "4"]
+        logger.info(f"Compressing using command [{' '.join(compress_cmds)}]".strip())
+        run_and_log_info(args=compress_cmds)
+
+        # run upload cmd
+        upload_cmds = base_cmds + ["upload", "--input-dir", "compressed"]
+        logger.info(f"Uploading using command [{' '.join(upload_cmds)}]")
+        run_and_log_info(args=upload_cmds)
+
+        # log to mongodb
+        log_to_mongodb(mongo_configfile=mongo_configfile, task_records=task_records)
+
+        # move uploaded & compressed content to tmp long term storage
+        mv_cmds = ["rclone", "move",
+                   f"{(full_root_dir / 'compressed').as_posix()}",
+                   f"{(full_root_dir / 'tmp_storage').as_posix()}",
+                   "--delete-empty-src-dirs"]
+        run_and_log_info(args=mv_cmds)
+
+        # run clean up command
+        # DANGEROUS!!
+        # remove_raw = ["rclone", "purge", f"{(full_root_dir/'raw').as_posix()}"]
+        # run_and_log_info(args=remove_raw)
+    else:
+        logger.info("Run flag not supplied...")
     return ReturnCodes.SUCCESS
 
 
-def log_to_mongodb(mongo_configfile: str, full_root_dir: Path):
+def log_to_mongodb(mongo_configfile: str, task_records: List[GDriveLog]):
     configfile: Path = Path(mongo_configfile)
     gdrive_mongo_store = MongograntStore(mongogrant_spec="rw:knowhere.lbl.gov/mp_core_mwu",
                                          collection_name="gdrive",
                                          mgclient_config_path=configfile.as_posix())
     gdrive_mongo_store.connect()
-    records_to_update: List[GDriveLog] = []
-    for root, dirs, files in os.walk((full_root_dir / "compressed").as_posix()):
-        for file in files:
-            full_gz_path = (Path(root) / file).as_posix()
-            path = full_gz_path[full_gz_path.find("block"):]
-            gdrive_log: GDriveLog = GDriveLog(path=path)
-            logger.info(f"Updating {gdrive_log.path}")
-            records_to_update.append(gdrive_log)
-
-    gdrive_mongo_store.update(docs=[record.dict() for record in records_to_update], key="path")
+    gdrive_mongo_store.update(docs=[record.dict() for record in task_records], key="path")
     logger.info(f"[{gdrive_mongo_store.collection_name}] Collection Updated")
 
 
@@ -644,7 +638,8 @@ def run_and_log_info(args, filelist=None):
     for run_output in run_outputs:
         logger.info(run_output.strip())
 
-def find_unuploaded_launcher_paths(outputfile, configfile, num):
+
+def find_unuploaded_launcher_paths(outputfile, configfile, num) -> List[GDriveLog]:
     """
     Find launcher paths that has not been uploaded
     Prioritize for blessed tasks and recent materials
@@ -687,13 +682,20 @@ def find_unuploaded_launcher_paths(outputfile, configfile, num):
     # find launcher paths
     task_records = list(tasks_mongo_store.query(criteria={"task_id": {"$in": task_ids}},
                                                 properties={"task_id": 1, "dir_name": 1}))
+    gdrive_logs: List[GDriveLog] = []
     logger.info(f"Writing [{len(task_records)}] launcher paths to [{outputfile.as_posix()}]")
     output_file_stream = outputfile.open('w')
     for task in task_records:
         dir_name: str = task["dir_name"]
         start = dir_name.find("block_")
         dir_name = dir_name[start:]
+        gdrive_logs.append(GDriveLog(path=dir_name, task_id=task["task_id"]))
         line = dir_name + "\n"
         output_file_stream.write(line)
+
+    # epilogue
     output_file_stream.close()
-    return task_records
+    gdrive_mongo_store.close()
+    material_mongo_store.close()
+    tasks_mongo_store.close()
+    return gdrive_logs
