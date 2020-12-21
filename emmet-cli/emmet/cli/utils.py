@@ -477,16 +477,42 @@ def make_tar_file(output_dir: Path, output_file_name: str, source_dir: Path):
 
 
 def organize_path(paths: List[str]) -> Dict[str, List[str]]:
+    """
+    Given
+        ['block_2017-11-15-20-03-23-693030/launcher_2017-12-03-08-48-26-533291',
+        'block_2017-11-15-20-03-23-693030/launcher_2017-12-03-08-48-31-795335',
+        'block_2017-11-15-20-03-23-693030/launcher_2017-12-03-08-48-26-533291/launcher_2017-12-03-09-22-53-006088',
+        'block_2017-11-15-20-03-23-693030/launcher_2017-12-03-08-48-31-795335/launcher_2017-12-03-10-48-13-528474']
+
+    construct dictionary of
+        dir -> launcher gz path
+        {
+            block_2017-11-15-20-03-23-693030/launcher_2017-12-03-08-48-26-533291 ->
+                block_2017-11-15-20-03-23-693030/launcher_2017-12-03-08-48-26-533291/launcher_2017-12-03-09-22-53-006088,
+            block_2017-11-15-20-03-23-693030/launcher_2017-12-03-08-48-31-795335 ->
+                block_2017-11-15-20-03-23-693030/launcher_2017-12-03-08-48-31-795335/launcher_2017-12-03-10-48-13-528474
+        }
+    :param paths: list of paths to organize.
+    :return:
+        dictionary of dir to zip path
+    """
     result: Dict[str, List[str]] = dict()
-    print(paths)
-    for path in paths:
+
+    for path in sorted(paths, key=len):
         splitted: List[str] = path.split("/")
-        block_name, launcher_names = splitted[0], splitted[1:]
-        list_of_launchers = organize_launchers(block_name=block_name, launcher_names=launcher_names)
-        if block_name in result:
-            result[block_name].extend(list_of_launchers)
+        key, val = "".join(splitted[:-1]), splitted[-1]
+        if key in result:
+            result[key].append(val)
         else:
-            result[block_name] = list_of_launchers
+            result[key] = [path]
+
+
+        # block_name, launcher_names = splitted[0], splitted[1:]
+        # list_of_launchers = organize_launchers(block_name=block_name, launcher_names=launcher_names)
+        # if block_name in result:
+        #     result[block_name].extend(list_of_launchers)
+        # else:
+        #     result[block_name] = list_of_launchers
     return result
 
 
@@ -509,24 +535,8 @@ def organize_launchers(block_name: str, launcher_names: List[str]) -> List[str]:
     return result
 
 
-def compress_launchers(input_dir: Path, output_dir: Path, block_name: str, launcher_paths: List[str]):
+def compress_launchers(input_dir: Path, output_dir: Path, launcher_paths: List[str]):
     """
-    Given
-    ['block_2017-11-15-20-03-23-693030/launcher_2017-12-03-08-48-26-533291',
-    'block_2017-11-15-20-03-23-693030/launcher_2017-12-03-08-48-31-795335', '
-    'block_2017-11-15-20-03-23-693030/launcher_2017-12-03-08-48-26-533291',
-    'block_2017-11-15-20-03-23-693030/launcher_2017-12-03-08-48-26-533291/launcher_2017-12-03-09-22-53-006088',
-    'block_2017-11-15-20-03-23-693030/launcher_2017-12-03-08-48-31-795335',
-    'block_2017-11-15-20-03-23-693030/launcher_2017-12-03-08-48-31-795335/launcher_2017-12-03-10-48-13-528474']
-
-    construct
-    dir -> launcher gz path
-    {
-        block_2017-11-15-20-03-23-693030/launcher_2017-12-03-08-48-26-533291 ->
-            block_2017-11-15-20-03-23-693030/launcher_2017-12-03-08-48-26-533291/launcher_2017-12-03-09-22-53-006088,
-        block_2017-11-15-20-03-23-693030/launcher_2017-12-03-08-48-31-795335 ->
-            block_2017-11-15-20-03-23-693030/launcher_2017-12-03-08-48-31-795335/launcher_2017-12-03-10-48-13-528474
-    }
 
     create directories & zip
 
@@ -537,7 +547,7 @@ def compress_launchers(input_dir: Path, output_dir: Path, block_name: str, launc
     :return:
     """
 
-    organized_path: Dict[str, str] = dict()
+    print(launcher_paths)
 
 
     # print(f"Compressing [{len(launcher_paths)}] launchers for [{block_name}]")
