@@ -660,45 +660,53 @@ def upload_latest(mongo_configfile, num_materials):
     full_mongo_config_path: Path = Path(mongo_configfile).expanduser()
     full_emmet_input_file_path: Path = full_root_dir / "emmet_input_file.txt"
 
-    base_cmds = ["emmet", "--run", "--yes", "--issue", "87", "tasks", "-d", full_root_dir.as_posix()]
+    # base_cmds = ["emmet", "--run", "--yes", "--issue", "87", "tasks", "-d", full_root_dir.as_posix()]
+    #
+    # # find all un-uploaded launchers
+    # find_unuploaded_launcher_paths_cmds = base_cmds + ["find-unuploaded-launcher-paths",
+    #                                                    "-o", full_emmet_input_file_path.as_posix(),
+    #                                                    "--configfile", full_mongo_config_path.as_posix(),
+    #                                                    "-n", str(num_materials)]
+    # logger.info(f"Finding un-uploaded launcher paths using command [{''.join(find_unuploaded_launcher_paths_cmds)}]")
+    # run_and_log_info(args=find_unuploaded_launcher_paths_cmds)
+    #
+    # # restore
+    # restore_cmds = base_cmds + ["restore", "--inputfile", full_emmet_input_file_path.as_posix()]
+    # logger.info(f"Restoring using command [{' '.join(restore_cmds)}]")
+    # logger.info("DBUGGING, NOT EXECUTING")
+    #
+    # # move restored content to directory/raw
+    # move_dir(src=full_root_dir.as_posix(), dst=(full_root_dir / 'raw').as_posix(), pattern="block*")
+    #
+    # # run compressed cmd
+    # compress_cmds = base_cmds + ["compress", "-l", "raw", "-o", "compressed", "--nproc", "4"]
+    # logger.info(f"Compressing using command [{' '.join(compress_cmds)}]".strip())
+    # run_and_log_info(args=compress_cmds)
+    #
+    # # run upload cmd
+    # upload_cmds = base_cmds + ["upload", "--input-dir", "compressed"]
+    # logger.info(f"Uploading using command [{' '.join(upload_cmds)}]")
+    # run_and_log_info(args=upload_cmds)
 
-    # find all un-uploaded launchers
-    find_unuploaded_launcher_paths_cmds = base_cmds + ["find-unuploaded-launcher-paths",
-                                                       "-o", full_emmet_input_file_path.as_posix(),
-                                                       "--configfile", full_mongo_config_path.as_posix(),
-                                                       "-n", str(num_materials)]
-    logger.info(f"Finding un-uploaded launcher paths using command [{''.join(find_unuploaded_launcher_paths_cmds)}]")
-    run_and_log_info(args=find_unuploaded_launcher_paths_cmds)
+    # log to mongodb
+    configfile: Path = Path(mongo_configfile)
+    gdrive_mongo_store = MongograntStore(mongogrant_spec="rw:knowhere.lbl.gov/mp_core_mwu",
+                                         collection_name="gdrive",
+                                         mgclient_config_path=configfile.as_posix())
+    for root, dirs, files in os.walk((full_root_dir/"compressed").as_posix()):
+        print(files)
 
-    # restore
-    restore_cmds = base_cmds + ["restore", "--inputfile", full_emmet_input_file_path.as_posix()]
-    logger.info(f"Restoring using command [{' '.join(restore_cmds)}]")
-    logger.info("DBUGGING, NOT EXECUTING")
-
-    # move restored content to directory/raw
-    move_dir(src=full_root_dir.as_posix(), dst=(full_root_dir / 'raw').as_posix(), pattern="block*")
-
-    # run compressed cmd
-    compress_cmds = base_cmds + ["compress", "-l", "raw", "-o", "compressed", "--nproc", "4"]
-    logger.info(f"Compressing using command [{' '.join(compress_cmds)}]".strip())
-    run_and_log_info(args=compress_cmds)
-
-    # run upload cmd
-    upload_cmds = base_cmds + ["upload", "--input-dir", "compressed"]
-    logger.info(f"Uploading using command [{' '.join(upload_cmds)}]")
-    run_and_log_info(args=upload_cmds)
-
-    # move uploaded, compressed content to tmp long term storage
-    mv_cmds = ["rclone", "move",
-               f"{(full_root_dir / 'compressed').as_posix()}",
-               f"{(full_root_dir / 'tmp_storage').as_posix()}",
-               "--delete-empty-src-dirs"]
-    run_and_log_info(args=mv_cmds)
-
-    # run clean up command
-    # DANGEROUS!!
-    remove_raw = ["rclone", "purge", f"{(full_root_dir/'raw').as_posix()}"]
-    run_and_log_info(args=remove_raw)
+    # # move uploaded, compressed content to tmp long term storage
+    # mv_cmds = ["rclone", "move",
+    #            f"{(full_root_dir / 'compressed').as_posix()}",
+    #            f"{(full_root_dir / 'tmp_storage').as_posix()}",
+    #            "--delete-empty-src-dirs"]
+    # run_and_log_info(args=mv_cmds)
+    #
+    # # run clean up command
+    # # DANGEROUS!!
+    # remove_raw = ["rclone", "purge", f"{(full_root_dir/'raw').as_posix()}"]
+    # run_and_log_info(args=remove_raw)
     return ReturnCodes.SUCCESS
 
 

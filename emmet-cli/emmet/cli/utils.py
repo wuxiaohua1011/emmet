@@ -520,7 +520,6 @@ class GDriveLog(BaseModel):
     path: str = Field(..., title="Path for the file",
                       description="Should reflect both local disk space AND google drive path")
     last_updated: datetime = Field(default=datetime.now())
-    created_at: datetime = Field(default=datetime.now())
     # mp_id: str = Field(..., title="Material ID in which this launcher belongs to")
 
 
