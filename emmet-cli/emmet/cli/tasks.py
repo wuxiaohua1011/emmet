@@ -531,6 +531,8 @@ def compress(input_dir, output_dir, nproc):
                 dir_name = dir_name[start:]
                 paths.append(dir_name)
     paths_organized: Dict[str, List[str]] = organize_path(paths)
+    from pprint import pprint
+    pprint(paths_organized)
     msg = f"compressed [{sum([ len(launcher_paths)  for block_name, launcher_paths in paths_organized.items()])}] launchers"
     if run:
         if not full_output_dir.exists():
