@@ -524,8 +524,7 @@ def compress(input_dir, output_dir, nproc):
     msg = f"compressed [{len(paths_organized)}] blocks with [{len(paths)}] launchers"
     if run:
         pool = multiprocessing.Pool(processes=nproc)
-        pool.starmap(func=compress_launchers, iterable=[(Path(input_dir), Path(output_dir),
-                                                         block_name, launcher_paths)
+        pool.starmap(func=compress_launchers, iterable=[(Path(input_dir), Path(output_dir), launcher_paths)
                                                         for block_name, launcher_paths in paths_organized.items()])
         # for block_name, launcher_paths in paths_organized.items():
         #     compress_launchers(input_dir=Path(input_dir), output_dir=Path(output_dir),
