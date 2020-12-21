@@ -709,4 +709,4 @@ def upload_latest():
     compress_cmds = ["emmet", "--run", "--yes", "--issue", "87", "tasks", "-d", "$SCRATCH/projects",
                      "compress", "-l", "raw", "-o", "compressed", "--nproc", "4"]
     run_command(args=compress_cmds, filelist=[])
-
+    return ReturnCodes.SUCCESS
