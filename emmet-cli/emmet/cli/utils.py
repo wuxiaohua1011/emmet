@@ -438,6 +438,7 @@ def make_tar_file(output_dir: Path, output_file_name: str, source_dir: Path):
         with tarfile.open(output_tar_file.as_posix(), "w:gz") as tar:
             tar.add(source_dir.as_posix(), arcname=os.path.basename(source_dir.as_posix()))
 
+
 def compress_launchers(input_dir: Path, output_dir: Path, launcher_paths: List[str]):
     """
 

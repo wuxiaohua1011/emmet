@@ -688,16 +688,19 @@ def upload_latest(mongo_configfile, num_materials):
     logger.info("DBUGGING, NOT EXECUTING")
 
     # move restored content to directory/raw
-    move_cmds = ["rclone", "move",
-                 f"source:{full_root_dir.as_posix()}", f"dest:{(full_root_dir/'raw').as_posix()}",
-                 "--include", "block**"]
+    move_cmds = ["mv", f"{full_root_dir.as_posix()}/block*", f"{(full_root_dir/'raw').as_posix()}"]
     logger.info(f"Moving restored using command [{' '.join(move_cmds)}]")
     run_and_log_info(args=move_cmds)
 
     # run compressed cmd
     compress_cmds = base_cmds + ["compress", "-l", "raw", "-o", "compressed", "--nproc", "4"]
-    logger.info(f"Compressing using command [{''.join(compress_cmds)}]")
+    logger.info(f"Compressing using command [{' '.join(compress_cmds)}]")
     run_and_log_info(args=compress_cmds)
+
+    # run upload cmd
+
+    # run clean up command
+
     return ReturnCodes.SUCCESS
 
 
