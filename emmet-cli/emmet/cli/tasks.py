@@ -753,9 +753,12 @@ def upload_latest(mongo_configfile, num_materials):
     records_to_update: List[GDriveLog] = []
     for root, dirs, files in os.walk((full_root_dir/"compressed").as_posix()):
         for file in files:
-            full_gz_path = Path(root) / file
-            gdrive_log: GDriveLog = GDriveLog(path=full_gz_path.as_posix())
+            full_gz_path = (Path(root) / file).as_posix()
+            path = full_gz_path[full_gz_path.find("block"):]
+            gdrive_log: GDriveLog = GDriveLog(path=path)
+            logger.info(f"Updating {gdrive_log}")
             records_to_update.append(gdrive_log)
+
     gdrive_mongo_store.update(docs=[record.dict() for record in records_to_update], key="path")
 
     # # move uploaded, compressed content to tmp long term storage
