@@ -653,5 +653,8 @@ def upload_latest():
     compress_cmds = ["emmet", "--run", "--yes", "--issue", "87", "tasks", "-d", "$SCRATCH/projects",
                      "compress", "-l", "raw", "-o", "compressed", "--nproc", "4"]
     logger.info(f"Running Compress {''.join(compress_cmds)}")
-    run_command(args=compress_cmds, filelist=[])
+    print(f"Running Compress {''.join(compress_cmds)}")
+    run_outputs = run_command(args=compress_cmds, filelist=[])
+    for run_output in run_outputs:
+        logger.info(run_output)
     return ReturnCodes.SUCCESS
