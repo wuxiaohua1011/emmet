@@ -232,7 +232,7 @@ def backup(clean, check):
 )
 @click.option(
     "--configfile",
-    required=True,
+    required=False,
     default=Path("~/.mongogrant.json").expanduser().as_posix(),
     type=click.Path(),
     help="mongo db connections. Path should be full path."
@@ -650,8 +650,8 @@ def parse(task_ids, nproc, store_volumetric_data):
 @tasks.command()
 @sbatch
 @click.option(
-    "--configfile",
-    required=True,
+    "--mongo-configfile",
+    required=False,
     default=Path("~/.mongogrant.json").expanduser().as_posix(),
     type=click.Path(),
     help="mongo db connections. Path should be full path."
@@ -664,17 +664,18 @@ def parse(task_ids, nproc, store_volumetric_data):
     type=click.IntRange(min=0, max=1000),
     help="maximum number of materials to query"
 )
-def upload_latest():
+def upload_latest(mongo_configfile):
     ctx = click.get_current_context()
     run = ctx.parent.parent.params["run"]
     directory = ctx.parent.params["directory"]
     full_root_dir: Path = Path(directory)
-
+    full_mongo_config_path: Path = Path(mongo_configfile).expanduser()
     base_cmds = ["emmet", "--run", "--yes", "--issue", "87", "tasks", "-d", full_root_dir.as_posix()]
 
     # find all un-uploaded launchers
     find_unuploaded_launcher_paths_cmds = base_cmds + ["find_unuploaded_launcher_paths",
-                                                       "-o", (full_root_dir / "emmet_input_file.txt").as_posix()]
+                                                       "-o", (full_root_dir / "emmet_input_file.txt").as_posix(),
+                                                       "--mongo-configfile", full_mongo_config_path.as_posix()]
     logger.info(f"Finding un-uploaded launcher paths using command [{find_unuploaded_launcher_paths_cmds}]")
     run_and_log_info(args=find_unuploaded_launcher_paths_cmds)
 
