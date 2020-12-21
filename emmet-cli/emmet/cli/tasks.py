@@ -24,7 +24,6 @@ from typing import List, Dict
 from pathlib import Path
 from maggma.stores.advanced_stores import MongograntStore
 
-
 logger = logging.getLogger("emmet")
 GARDEN = "/home/m/matcomp/garden"
 PREFIX = "block_"
@@ -291,7 +290,7 @@ def find_unuploaded_launcher_paths(outputfile, configfile, num):
             outputfile.parent.mkdir(exist_ok=True, parents=True)
         # find launcher paths
         task_records = list(tasks_mongo_store.query(criteria={"task_id": {"$in": task_ids}},
-                                        properties={"task_id": 1, "dir_name": 1}))
+                                                    properties={"task_id": 1, "dir_name": 1}))
         logger.info(f"Writing [{len(task_records)}] launcher paths to [{outputfile.as_posix()}]")
         output_file_stream = outputfile.open('w')
         for task in task_records:
@@ -647,10 +646,11 @@ def parse(task_ids, nproc, store_volumetric_data):
         logger.info(f"Would parse and insert {count}/{gen.value} tasks in {directory}.")
     return ReturnCodes.SUCCESS if count and gen.value else ReturnCodes.WARNING
 
+
 @tasks.command()
 @sbatch
 def upload_latest():
-    scratch_dir = os.environ.get("$SCRATCH", "/global/cscratch1/sd/mwu1011")
-    find_unuploaded_launcher_paths(outputfile=scratch_dir + "/projects/emmet_input_file.txt",
-                                   configfile=Path("~/.mongogrant.json").expanduser().as_posix(), num=1000)
-    print("DONE")
+    compress_cmds = ["emmet", "--run", "--yes", "--issue", "87", "tasks", "-d", "$SCRATCH/projects",
+                     "compress", "-l", "raw", "-o", "compressed", "--nproc", "4"]
+    run_command(args=compress_cmds, filelist=[])
+
