@@ -538,7 +538,7 @@ def compress(input_dir, output_dir, nproc):
         else:
             path_organized_by_blocks[block_name] = [path]
 
-    msg = f"compressed [{len(paths)}] items"
+    msg = f"compressed [{len(path_organized_by_blocks)}] blocks"
     if run:
         if not full_output_dir.exists():
             full_output_dir.mkdir(parents=True, exist_ok=True)
