@@ -650,7 +650,11 @@ def parse(task_ids, nproc, store_volumetric_data):
 @tasks.command()
 @sbatch
 def upload_latest():
-    compress_cmds = ["emmet", "--run", "--yes", "--issue", "87", "tasks", "-d", "$SCRATCH/projects",
+    ctx = click.get_current_context()
+    run = ctx.parent.parent.params["run"]
+    directory = ctx.parent.params["directory"]
+    full_root_dir = Path(directory) / "projects"
+    compress_cmds = ["emmet", "--run", "--yes", "--issue", "87", "tasks", "-d", full_root_dir.as_posix(),
                      "compress", "-l", "raw", "-o", "compressed", "--nproc", "4"]
     logger.info(f"Running Compress {''.join(compress_cmds)}")
     print(f"Running Compress {''.join(compress_cmds)}")
