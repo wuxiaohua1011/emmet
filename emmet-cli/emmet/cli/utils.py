@@ -504,7 +504,7 @@ def organize_path(paths: List[str]) -> Dict[str, List[str]]:
             for curr_val in result[key]:
                 if val in curr_val:
                     continue
-            result[key].append(val)
+            result[key].append(path)
 
         else:
             result[key] = [path]
