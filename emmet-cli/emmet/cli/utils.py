@@ -487,10 +487,9 @@ def organize_path(paths: List[str]) -> Dict[str, List[str]]:
     construct dictionary of
         dir -> launcher gz path
         {
-            block_2017-11-15-20-03-23-693030/launcher_2017-12-03-08-48-26-533291 ->
-                block_2017-11-15-20-03-23-693030/launcher_2017-12-03-08-48-26-533291/launcher_2017-12-03-09-22-53-006088,
-            block_2017-11-15-20-03-23-693030/launcher_2017-12-03-08-48-31-795335 ->
-                block_2017-11-15-20-03-23-693030/launcher_2017-12-03-08-48-31-795335/launcher_2017-12-03-10-48-13-528474
+            block_2017-11-15-20-03-23-693030 ->
+                [block_2017-11-15-20-03-23-693030/launcher_2017-12-03-08-48-26-533291/launcher_2017-12-03-09-22-53-006088,
+                block_2017-11-15-20-03-23-693030/launcher_2017-12-03-08-48-31-795335/launcher_2017-12-03-10-48-13-528474]
         }
     :param paths: list of paths to organize.
     :return:
@@ -499,7 +498,7 @@ def organize_path(paths: List[str]) -> Dict[str, List[str]]:
     result: Dict[str, List[str]] = dict()
     for path in sorted(paths, key=len):
         splitted: List[str] = path.split("/")
-        key, val = "/".join(splitted[:-1]), splitted[-1]
+        key, val = "/".join(splitted[0]), splitted[-1]
         if key in result:
             result[key].append(path)
         else:
