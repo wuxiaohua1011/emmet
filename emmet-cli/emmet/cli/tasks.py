@@ -17,7 +17,7 @@ from emmet.cli.utils import VaspDirsGenerator, EmmetCliError, ReturnCodes
 from emmet.cli.utils import ensure_indexes, get_subdir, parse_vasp_dirs
 from emmet.cli.utils import chunks, iterator_slice
 from emmet.cli.decorators import sbatch
-from emmet.cli.utils import compress_launchers, find_un_uploaded_materials_task_id, move_dir
+from emmet.cli.utils import compress_launchers, find_un_uploaded_materials_task_id, move_dir,GDriveLog
 
 import datetime
 from typing import List, Dict
@@ -693,8 +693,10 @@ def upload_latest(mongo_configfile, num_materials):
     gdrive_mongo_store = MongograntStore(mongogrant_spec="rw:knowhere.lbl.gov/mp_core_mwu",
                                          collection_name="gdrive",
                                          mgclient_config_path=configfile.as_posix())
+    records_to_update: List[GDriveLog] = []
     for root, dirs, files in os.walk((full_root_dir/"compressed").as_posix()):
-        print(files)
+        for file in files:
+            print(Path(root) / file)
 
     # # move uploaded, compressed content to tmp long term storage
     # mv_cmds = ["rclone", "move",
