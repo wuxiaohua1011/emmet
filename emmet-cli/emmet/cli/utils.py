@@ -457,7 +457,7 @@ def compress_launchers(input_dir: Path, output_dir: Path, launcher_paths: List[s
         if (out_dir / output_file_name).exists():
             continue
         else:
-            logger.info(f"Compressing {launcher_path}")
+            logger.info(f"Compressing {launcher_path}".strip())
             make_tar_file(output_dir=out_dir,
                           output_file_name=output_file_name,
                           source_dir=Path(input_dir) / launcher_path)
@@ -521,7 +521,7 @@ class GDriveLog(BaseModel):
                       description="Should reflect both local disk space AND google drive path")
     last_updated: datetime = Field(default=datetime.now())
     created_at: datetime = Field(default=datetime.now())
-    mp_id: str = Field(..., title="Material ID in which this launcher belongs to")
+    # mp_id: str = Field(..., title="Material ID in which this launcher belongs to")
 
 
 def move_dir(src: str, dst: str, pattern: str):
