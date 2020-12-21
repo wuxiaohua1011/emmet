@@ -475,41 +475,6 @@ def make_tar_file(output_dir: Path, output_file_name: str, source_dir: Path):
         with tarfile.open(output_tar_file.as_posix(), "w:gz") as tar:
             tar.add(source_dir.as_posix(), arcname=os.path.basename(source_dir.as_posix()))
 
-
-def organize_path(paths: List[str]) -> Dict[str, List[str]]:
-    """
-    Given
-        ['block_2017-11-15-20-03-23-693030/launcher_2017-12-03-08-48-26-533291',
-        'block_2017-11-15-20-03-23-693030/launcher_2017-12-03-08-48-31-795335',
-        'block_2017-11-15-20-03-23-693030/launcher_2017-12-03-08-48-26-533291/launcher_2017-12-03-09-22-53-006088',
-        'block_2017-11-15-20-03-23-693030/launcher_2017-12-03-08-48-31-795335/launcher_2017-12-03-10-48-13-528474']
-
-    construct dictionary of
-        dir -> launcher gz path
-        {
-            block_2017-11-15-20-03-23-693030 ->
-                [block_2017-11-15-20-03-23-693030/launcher_2017-12-03-08-48-26-533291/launcher_2017-12-03-09-22-53-006088,
-                block_2017-11-15-20-03-23-693030/launcher_2017-12-03-08-48-31-795335/launcher_2017-12-03-10-48-13-528474]
-        }
-    :param paths: list of paths to organize.
-    :return:
-        dictionary of dir to zip path
-    """
-    result: Dict[str, List[str]] = dict()
-    for path in sorted(paths, key=len):
-        splitted: List[str] = path.split("/")
-        key, val = splitted[0], splitted[-1]
-        if key in result:
-            for curr_val in result[key]:
-                print(val, curr_val, val in curr_val)
-                if val in curr_val:
-                    continue
-            result[key].append(path)
-        else:
-            result[key] = [path]
-    return result
-
-
 def compress_launchers(input_dir: Path, output_dir: Path, launcher_paths: List[str]):
     """
 
@@ -521,11 +486,17 @@ def compress_launchers(input_dir: Path, output_dir: Path, launcher_paths: List[s
     :param launcher_paths:
     :return:
     """
-    logger.info(f"Compressing {launcher_paths}")
+
     for launcher_path in launcher_paths:
-        make_tar_file(output_dir=Path(output_dir) / Path(launcher_path).parent,
-                      output_file_name=launcher_path.split("/")[-1],
-                      source_dir=Path(input_dir) / launcher_path)
+        out_dir = Path(output_dir) / Path(launcher_path).parent
+        output_file_name = launcher_path.split("/")[-1]
+        if (out_dir / output_file_name).exists():
+            continue
+        else:
+            logger.info(f"Compressing {launcher_path}")
+            make_tar_file(output_dir=out_dir,
+                          output_file_name=output_file_name,
+                          source_dir=Path(input_dir) / launcher_path)
 
 
 def find_un_uploaded_materials_task_id(gdrive_mongo_store: MongograntStore,
