@@ -496,9 +496,7 @@ def organize_path(paths: List[str]) -> Dict[str, List[str]]:
     :return:
         dictionary of dir to zip path
     """
-    print(paths)
     result: Dict[str, List[str]] = dict()
-
     for path in sorted(paths, key=len):
         splitted: List[str] = path.split("/")
         key, val = "".join(splitted[:-1]), splitted[-1]
@@ -506,16 +504,7 @@ def organize_path(paths: List[str]) -> Dict[str, List[str]]:
             result[key].append(path)
         else:
             result[key] = [path]
-
-
-        # block_name, launcher_names = splitted[0], splitted[1:]
-        # list_of_launchers = organize_launchers(block_name=block_name, launcher_names=launcher_names)
-        # if block_name in result:
-        #     result[block_name].extend(list_of_launchers)
-        # else:
-        #     result[block_name] = list_of_launchers
     return result
-
 
 
 def compress_launchers(input_dir: Path, output_dir: Path, launcher_paths: List[str]):
@@ -529,9 +518,10 @@ def compress_launchers(input_dir: Path, output_dir: Path, launcher_paths: List[s
     :param launcher_paths:
     :return:
     """
-    print("ABOUT TO COMPRESS THESE LAUNCHERS")
-    print(launcher_paths)
-
+    for launcher_path in launcher_paths:
+        make_tar_file(output_dir=Path(output_dir) / Path(launcher_path).parent,
+                      output_file_name=launcher_path.split("/")[-1],
+                      source_dir=Path(input_dir) / launcher_path)
 
     # print(f"Compressing [{len(launcher_paths)}] launchers for [{block_name}]")
     # logger.info(f"Compressing [{len(launcher_paths)}] launchers for [{block_name}]")
@@ -597,6 +587,7 @@ def find_materials_task_id_helper(material_mongo_store, max_num, exclude_list=No
             blessed_tasks: dict = material["blessed_tasks"]
             result.extend(list(blessed_tasks.values()))
     return result
+
 
 class GDriveLog(BaseModel):
     path: str = Field(..., title="Path for the file",
