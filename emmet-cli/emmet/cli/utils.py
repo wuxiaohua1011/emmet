@@ -526,6 +526,7 @@ def organize_launchers(block_name: str, launcher_names: List[str]) -> List[str]:
     :return: list of launcher names
 
     """
+    print(launcher_names)
     result: List[str] = []
     prev_name = block_name
     for launcher_name in launcher_names:
@@ -546,7 +547,7 @@ def compress_launchers(input_dir: Path, output_dir: Path, launcher_paths: List[s
     :param launcher_paths:
     :return:
     """
-
+    print("ABOUT TO COMPRESS THESE LAUNCHERS")
     print(launcher_paths)
 
 
