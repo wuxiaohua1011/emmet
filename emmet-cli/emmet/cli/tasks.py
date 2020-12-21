@@ -649,16 +649,45 @@ def parse(task_ids, nproc, store_volumetric_data):
 
 @tasks.command()
 @sbatch
+@click.option(
+    "--configfile",
+    required=True,
+    default=Path("~/.mongogrant.json").expanduser().as_posix(),
+    type=click.Path(),
+    help="mongo db connections. Path should be full path."
+)
+@click.option(
+    "-n",
+    "--num",
+    required=False,
+    default=1000,
+    type=click.IntRange(min=0, max=1000),
+    help="maximum number of materials to query"
+)
 def upload_latest():
     ctx = click.get_current_context()
     run = ctx.parent.parent.params["run"]
     directory = ctx.parent.params["directory"]
     full_root_dir: Path = Path(directory)
-    compress_cmds = ["emmet", "--run", "--yes", "--issue", "87", "tasks", "-d", full_root_dir.as_posix(),
-                     "compress", "-l", "raw", "-o", "compressed", "--nproc", "4"]
-    logger.info(f"Running Compress {''.join(compress_cmds)}")
-    print(f"Running Compress {''.join(compress_cmds)}")
-    run_outputs = run_command(args=compress_cmds, filelist=[])
+
+    base_cmds = ["emmet", "--run", "--yes", "--issue", "87", "tasks", "-d", full_root_dir.as_posix()]
+
+    # find all un-uploaded launchers
+    find_unuploaded_launcher_paths_cmds = base_cmds + ["find_unuploaded_launcher_paths",
+                                                       "-o", (full_root_dir / "emmet_input_file.txt").as_posix()]
+    logger.info(f"Finding un-uploaded launcher paths using command [{find_unuploaded_launcher_paths_cmds}]")
+    run_and_log_info(args=find_unuploaded_launcher_paths_cmds)
+
+    # run compressed cmd
+    compress_cmds = base_cmds + ["compress", "-l", "raw", "-o", "compressed", "--nproc", "4"]
+    logger.info(f"Compressing using command [{''.join(compress_cmds)}]")
+    run_and_log_info(args=compress_cmds)
+    return ReturnCodes.SUCCESS
+
+
+def run_and_log_info(args, filelist=None):
+    if filelist is None:
+        filelist = []
+    run_outputs = run_command(args=args, filelist=filelist)
     for run_output in run_outputs:
         logger.info(run_output)
-    return ReturnCodes.SUCCESS
