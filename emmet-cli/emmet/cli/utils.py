@@ -441,6 +441,7 @@ def make_tar_file(output_dir: Path, output_file_name: str, source_dir: Path):
 
 def organize_path(paths: List[str]) -> Dict[str, List[str]]:
     result: Dict[str, List[str]] = dict()
+    print(paths)
     for path in paths:
         splitted: List[str] = path.split("/")
         block_name, launcher_names = splitted[0], splitted[1:]
@@ -472,16 +473,47 @@ def organize_launchers(block_name: str, launcher_names: List[str]) -> List[str]:
 
 
 def compress_launchers(input_dir: Path, output_dir: Path, block_name: str, launcher_paths: List[str]):
-    print(f"Compressing [{len(launcher_paths)}] launchers for [{block_name}]")
-    logger.info(f"Compressing [{len(launcher_paths)}] launchers for [{block_name}]")
-    print(launcher_paths)
-    for launcher_path in launcher_paths:
-        source_dir = Path(input_dir) / launcher_path
-        # print(launcher_path)
-        output_dir = Path(output_dir) / block_name
-        # make_tar_file(output_dir=output_dir,
-        #               output_file_name=launcher_path.split("/")[-1],
-        #               source_dir=source_dir)
+    """
+    Given
+    ['block_2017-11-15-20-03-23-693030/launcher_2017-12-03-08-48-26-533291',
+    'block_2017-11-15-20-03-23-693030/launcher_2017-12-03-08-48-31-795335', '
+    'block_2017-11-15-20-03-23-693030/launcher_2017-12-03-08-48-26-533291',
+    'block_2017-11-15-20-03-23-693030/launcher_2017-12-03-08-48-26-533291/launcher_2017-12-03-09-22-53-006088',
+    'block_2017-11-15-20-03-23-693030/launcher_2017-12-03-08-48-31-795335',
+    'block_2017-11-15-20-03-23-693030/launcher_2017-12-03-08-48-31-795335/launcher_2017-12-03-10-48-13-528474']
+
+    construct
+    dir -> launcher gz path
+    {
+        block_2017-11-15-20-03-23-693030/launcher_2017-12-03-08-48-26-533291 ->
+            block_2017-11-15-20-03-23-693030/launcher_2017-12-03-08-48-26-533291/launcher_2017-12-03-09-22-53-006088,
+        block_2017-11-15-20-03-23-693030/launcher_2017-12-03-08-48-31-795335 ->
+            block_2017-11-15-20-03-23-693030/launcher_2017-12-03-08-48-31-795335/launcher_2017-12-03-10-48-13-528474
+    }
+
+    create directories & zip
+
+    :param input_dir:
+    :param output_dir:
+    :param block_name:
+    :param launcher_paths:
+    :return:
+    """
+
+    organized_path: Dict[str, str] = dict()
+
+
+    # print(f"Compressing [{len(launcher_paths)}] launchers for [{block_name}]")
+    # logger.info(f"Compressing [{len(launcher_paths)}] launchers for [{block_name}]")
+    #
+    # print(launcher_paths)
+    # for launcher_path in launcher_paths:
+    #     source_dir = Path(input_dir) / launcher_path
+    #     # print(launcher_path)
+    #     output_dir = Path(output_dir) / block_name
+    #     # make_tar_file(output_dir=output_dir,
+    #     #               output_file_name=launcher_path.split("/")[-1],
+    #     #               source_dir=source_dir)
 
 
 def find_un_uploaded_materials_task_id(gdrive_mongo_store: MongograntStore,
