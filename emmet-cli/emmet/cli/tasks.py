@@ -641,7 +641,7 @@ def upload_latest(mongo_configfile, num_materials):
 
         # restore
         restore_cmds = base_cmds + ["restore", "--inputfile", full_emmet_input_file_path.as_posix()]
-        # run_and_log_info(args=restore_cmds)
+        run_and_log_info(args=restore_cmds)
         logger.info(f"Restoring using command [{' '.join(restore_cmds)}]")
         logger.info("DBUGGING, NOT EXECUTING")
 
@@ -698,14 +698,14 @@ def log_to_mongodb(mongo_configfile: str, task_records: List[GDriveLog], raw_dir
     gdrive_mongo_store.connect()
     for record in task_records:
         fill_record_data(record, raw_dir)
-
     gdrive_mongo_store.update(docs=[record.dict() for record in task_records], key="path")
     logger.info(f"[{gdrive_mongo_store.collection_name}] Collection Updated")
 
 
-def fill_record_data(record: GDriveLog, raw_dir:Path):
+def fill_record_data(record: GDriveLog, raw_dir: Path):
     launcher_folder_path = raw_dir / record.path.split(sep=".tar.gz")[0]
-    print(launcher_folder_path)
+
+
 
 def run_and_log_info(args, filelist=None):
     if filelist is None:
