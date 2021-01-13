@@ -17,7 +17,7 @@ from emmet.cli.utils import VaspDirsGenerator, EmmetCliError, ReturnCodes
 from emmet.cli.utils import ensure_indexes, get_subdir, parse_vasp_dirs
 from emmet.cli.utils import chunks, iterator_slice
 from emmet.cli.decorators import sbatch
-from emmet.cli.utils import compress_launchers, find_un_uploaded_materials_task_id, move_dir, GDriveLog
+from emmet.cli.utils import compress_launchers, find_un_uploaded_materials_task_id, move_dir, GDriveLog, md5_dir, md5_file
 
 import datetime
 from typing import List, Dict
@@ -603,7 +603,8 @@ def upload_latest(mongo_configfile, num_materials):
         run_and_log_info(args=upload_cmds)
 
         # log to mongodb
-        log_to_mongodb(mongo_configfile=mongo_configfile, task_records=task_records, raw_dir=full_root_dir / 'raw')
+        log_to_mongodb(mongo_configfile=mongo_configfile, task_records=task_records,
+                       raw_dir=full_root_dir / 'raw', compress_dir=full_root_dir / "compressed")
 
         # move uploaded & compressed content to tmp long term storage
         mv_cmds = ["rclone", "move",
@@ -621,7 +622,7 @@ def upload_latest(mongo_configfile, num_materials):
     return ReturnCodes.SUCCESS
 
 
-def log_to_mongodb(mongo_configfile: str, task_records: List[GDriveLog], raw_dir: Path):
+def log_to_mongodb(mongo_configfile: str, task_records: List[GDriveLog], raw_dir: Path, compress_dir: Path):
     """
     # find the reference launcher of the launcher.tar.gz
     # sort filename by alphabetically, loop through every file, keep a "global" md5
@@ -630,6 +631,7 @@ def log_to_mongodb(mongo_configfile: str, task_records: List[GDriveLog], raw_dir
     # get the "global" md5
     # find total filesize of the launcher.tar.gz
 
+    :param compress_dir:
     :param raw_dir:
     :param mongo_configfile:
     :param task_records:
@@ -641,15 +643,21 @@ def log_to_mongodb(mongo_configfile: str, task_records: List[GDriveLog], raw_dir
                                          mgclient_config_path=configfile.as_posix())
     gdrive_mongo_store.connect()
     for record in task_records:
-        fill_record_data(record, raw_dir)
+        fill_record_data(record, raw_dir, compress_dir)
     gdrive_mongo_store.update(docs=[record.dict() for record in task_records], key="path")
     logger.info(f"[{gdrive_mongo_store.collection_name}] Collection Updated")
 
 
-def fill_record_data(record: GDriveLog, raw_dir: Path):
-    launcher_folder_path = raw_dir / record.path.split(sep=".tar.gz")[0]
-
-
+def fill_record_data(record: GDriveLog, raw_dir: Path, compress_dir: Path):
+    compress_file_dir = (compress_dir / record.path).as_posix() + ".tar.gz"
+    record.file_size = os.path.getsize(compress_file_dir)
+    record.md5hash = md5_dir(raw_dir / record.path)
+    for root, dirs, files in os.walk((raw_dir/record.path).as_posix()):
+        for file in files:
+            record.files.append({"file_name": file,
+                                 "size": os.path.getsize((raw_dir/record.path/file).as_posix()),
+                                 "md5hash": md5_file((raw_dir/record.path/file).as_posix())})
+            print(record.files)
 
 def run_and_log_info(args, filelist=None):
     if filelist is None:
