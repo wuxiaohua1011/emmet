@@ -521,20 +521,10 @@ class GDriveLog(BaseModel):
     path: str = Field(..., title="Path for the file",
                       description="Should reflect both local disk space AND google drive path")
     last_updated: datetime = Field(default=datetime.now())
-    task_id: str = Field(..., title="Material ID in which this launcher belongs to")
+    task_id: str = Field(default="", title="Material ID in which this launcher belongs to")
     file_size: int = Field(default=0, description="file size of the tar.gz")
+    md5hash: str = Field(default="", description="md5 hash of the content of the files inside this gzip")
     files: List[Dict[str, Any]] = Field(default=[], description="meta data of the content of the gzip")
-    # total file size
-    # md5hash of the raw launcher folder
-    # files: [
-    #   {"file_name":x, "size":123 , "md5hash": xyz}
-    # ]
-    # list of content ex: [vasp, blah, blah, ]
-    # input -> [incar, kpoints, poscar, potcar]
-    # all other files are output files
-    # single file size
-    # single file md5hash
-    #
 
 
 """
