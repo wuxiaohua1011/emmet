@@ -659,7 +659,7 @@ def upload_latest(mongo_configfile, num_materials):
         run_and_log_info(args=upload_cmds)
 
         # log to mongodb
-        log_to_mongodb(mongo_configfile=mongo_configfile, task_records=task_records)
+        log_to_mongodb(mongo_configfile=mongo_configfile, task_records=task_records, raw_dir=full_root_dir / 'raw')
 
         # move uploaded & compressed content to tmp long term storage
         mv_cmds = ["rclone", "move",
@@ -677,15 +677,35 @@ def upload_latest(mongo_configfile, num_materials):
     return ReturnCodes.SUCCESS
 
 
-def log_to_mongodb(mongo_configfile: str, task_records: List[GDriveLog]):
+def log_to_mongodb(mongo_configfile: str, task_records: List[GDriveLog], raw_dir: Path):
+    """
+    # find the reference launcher of the launcher.tar.gz
+    # sort filename by alphabetically, loop through every file, keep a "global" md5
+        # on every file, compute size, & md5hash of content of the file
+        # update global md5hash
+    # get the "global" md5
+    # find total filesize of the launcher.tar.gz
+
+    :param raw_dir:
+    :param mongo_configfile:
+    :param task_records:
+    :return:
+    """
     configfile: Path = Path(mongo_configfile)
     gdrive_mongo_store = MongograntStore(mongogrant_spec="rw:knowhere.lbl.gov/mp_core_mwu",
                                          collection_name="gdrive",
                                          mgclient_config_path=configfile.as_posix())
     gdrive_mongo_store.connect()
+    for record in task_records:
+        fill_record_data(record, raw_dir)
+
     gdrive_mongo_store.update(docs=[record.dict() for record in task_records], key="path")
     logger.info(f"[{gdrive_mongo_store.collection_name}] Collection Updated")
 
+
+def fill_record_data(record: GDriveLog, raw_dir:Path):
+    launcher_folder_path = raw_dir / record.path.split(sep=".tar.gz")[0]
+    print(launcher_folder_path)
 
 def run_and_log_info(args, filelist=None):
     if filelist is None:

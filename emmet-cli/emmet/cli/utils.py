@@ -29,7 +29,7 @@ from typing import List, Dict
 import tarfile
 import subprocess, shlex
 from pydantic import BaseModel, Field
-from typing import List, Dict, Set
+from typing import List, Dict, Set, Any
 from maggma.stores.advanced_stores import MongograntStore
 from maggma.core.store import Sort
 
@@ -518,7 +518,8 @@ def find_un_uploaded_materials_task_id(gdrive_mongo_store: MongograntStore,
                                                          max_num=max_num, exclude_list=[])
     result: Set[str] = set(materials)
     # remove any of them that are already in the gdrive store
-    gdrive_mp_ids = set(gdrive_mongo_store.query(criteria={"mp_id": {"$in": list(result)}}, properties={"mp_id": 1}))
+    gdrive_mp_ids = set(
+        gdrive_mongo_store.query(criteria={"task_id": {"$in": list(result)}}, properties={"task_id": 1}))
     result = result.difference(gdrive_mp_ids)
     retry = 0  # if there are really no more materials to add, just exit
     while len(result) < max_num and retry < 5:
@@ -530,7 +531,7 @@ def find_un_uploaded_materials_task_id(gdrive_mongo_store: MongograntStore,
         result = set(materials)
         # remove any of them that are already in the gdrive store
         gdrive_mp_ids = set(
-            gdrive_mongo_store.query(criteria={"mp_id": {"$in": list(result)}}, properties={"mp_id": 1}))
+            gdrive_mongo_store.query(criteria={"task_id": {"$in": list(result)}}, properties={"task_id": 1}))
         result = result.difference(gdrive_mp_ids)
         retry += 1
     return list(result)
@@ -558,6 +559,26 @@ class GDriveLog(BaseModel):
                       description="Should reflect both local disk space AND google drive path")
     last_updated: datetime = Field(default=datetime.now())
     task_id: str = Field(..., title="Material ID in which this launcher belongs to")
+    file_size: int = Field(default=0, description="file size of the tar.gz")
+    files: List[Dict[str, Any]] = Field(default=[], description="meta data of the content of the gzip")
+    # total file size
+    # md5hash of the raw launcher folder
+    # files: [
+    #   {"file_name":x, "size":123 , "md5hash": xyz}
+    # ]
+    # list of content ex: [vasp, blah, blah, ]
+    # input -> [incar, kpoints, poscar, potcar]
+    # all other files are output files
+    # single file size
+    # single file md5hash
+    #
+
+
+"""
+laucher
+    - vasprun
+    - 
+"""
 
 
 def move_dir(src: str, dst: str, pattern: str):
