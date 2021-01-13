@@ -23,7 +23,9 @@ from dotty_dict import dotty
 
 from emmet.core.utils import group_structures
 from emmet.cli import SETTINGS
-
+import hashlib
+from _hashlib import HASH as Hash
+from typing import Union
 from pathlib import Path
 from typing import List, Dict
 import tarfile
@@ -563,6 +565,10 @@ class GDriveLog(BaseModel):
     md5hash: str = Field(default="", description="md5 hash of the content of the files inside this gzip")
     files: List[Dict[str, Any]] = Field(default=[], description="meta data of the content of the gzip")
 
+class File(BaseModel):
+    file_name: str = Field(default="")
+    size: int = Field(default=0)
+    md5hash: str = Field(default="")
 
 """
 laucher
@@ -575,3 +581,30 @@ def move_dir(src: str, dst: str, pattern: str):
     for file_path in glob(f'{src}/{pattern}'):
         logger.info(f"Moving [{file_path}] to [{dst}]")
         shutil.move(src=file_path, dst=f"{dst}")
+
+
+def md5_update_from_file(filename: Union[str, Path], hash: Hash) -> Hash:
+    assert Path(filename).is_file()
+    with open(str(filename), "rb") as f:
+        for chunk in iter(lambda: f.read(4096), b""):
+            hash.update(chunk)
+    return hash
+
+
+def md5_file(filename: Union[str, Path]) -> str:
+    return str(md5_update_from_file(filename, hashlib.md5()).hexdigest())
+
+
+def md5_update_from_dir(directory: Union[str, Path], hash: Hash) -> Hash:
+    assert Path(directory).is_dir()
+    for path in sorted(Path(directory).iterdir(), key=lambda p: str(p).lower()):
+        hash.update(path.name.encode())
+        if path.is_file():
+            hash = md5_update_from_file(path, hash)
+        elif path.is_dir():
+            hash = md5_update_from_dir(path, hash)
+    return hash
+
+
+def md5_dir(directory: Union[str, Path]) -> str:
+    return str(md5_update_from_dir(directory, hashlib.md5()).hexdigest())
