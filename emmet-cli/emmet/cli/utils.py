@@ -571,3 +571,14 @@ def md5_update_from_dir(directory: Union[str, Path], hash: Hash) -> Hash:
 
 def md5_dir(directory: Union[str, Path]) -> str:
     return str(md5_update_from_dir(directory, hashlib.md5()).hexdigest())
+
+def fill_record_data(record: GDriveLog, raw_dir: Path, compress_dir: Path):
+    compress_file_dir = (compress_dir / record.path).as_posix() + ".tar.gz"
+    record.file_size = os.path.getsize(compress_file_dir)
+    record.md5hash = md5_dir(raw_dir / record.path)
+    for root, dirs, files in os.walk((raw_dir / record.path).as_posix()):
+        for file in files:
+            record.files.append({"file_name": file,
+                                 "size": os.path.getsize((raw_dir / record.path / file).as_posix()),
+                                 "md5hash": md5_file((raw_dir / record.path / file).as_posix())})
+            print(record.files)
