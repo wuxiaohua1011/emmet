@@ -579,7 +579,7 @@ def fill_record_data(record: GDriveLog, raw_dir: Path, compress_dir: Path):
     compress_file_dir = (compress_dir / record.path).as_posix() + ".tar.gz"
     record.file_size = os.path.getsize(compress_file_dir)
     record.md5hash = md5_dir(raw_dir / record.path)
-    list_of_files = getListOfFiles(dirName=record.path)
+    list_of_files = getListOfFiles(dirName= (raw_dir / record.path).as_posix())
     record.files.extend([_make_file_dict(file_path=Path(file), start_at=record.path) for file in list_of_files])
 
 
