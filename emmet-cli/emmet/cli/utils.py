@@ -579,12 +579,36 @@ def fill_record_data(record: GDriveLog, raw_dir: Path, compress_dir: Path):
     compress_file_dir = (compress_dir / record.path).as_posix() + ".tar.gz"
     record.file_size = os.path.getsize(compress_file_dir)
     record.md5hash = md5_dir(raw_dir / record.path)
-    for root, dirs, files in os.walk((raw_dir / record.path).as_posix()):
-        for file in files:
-            record.files.append({"file_name": file,
-                                 "size": os.path.getsize((raw_dir / record.path / file).as_posix()),
-                                 "md5hash": md5_file((raw_dir / record.path / file).as_posix())})
-            print(record.files)
+    list_of_files = getListOfFiles(dirName=record.path)
+    record.files.extend([_make_file_dict(file_path=Path(file), start_at=record.path) for file in list_of_files])
+
+
+def getListOfFiles(dirName):
+    """
+        For the given path, get the List of all files in the directory tree
+    """
+    # create a list of file and sub directories
+    # names in the given directory
+    listOfFile = os.listdir(dirName)
+    allFiles = list()
+    # Iterate over all the entries
+    for entry in listOfFile:
+        # Create full path
+        fullPath = os.path.join(dirName, entry)
+        # If entry is a directory then get the list of files in this directory
+        if os.path.isdir(fullPath):
+            allFiles = allFiles + getListOfFiles(fullPath)
+        else:
+            allFiles.append(fullPath)
+    return allFiles
+
+
+def _make_file_dict(file_path: Path, start_at: str) -> dict:
+    start_index = file_path.as_posix().find(start_at)
+    path = file_path.as_posix()[start_index:]
+    return {"path": path,
+            "size": os.path.getsize(file_path.as_posix()),
+            "md5hash": md5_file(file_path)}
 
 
 def find_all_launcher_paths(input_dir: Path) -> List[str]:
@@ -595,6 +619,7 @@ def find_all_launcher_paths(input_dir: Path) -> List[str]:
                 sub_paths = find_all_launcher_paths_helper(Path(root) / name)
                 paths.extend(sub_paths)
     return paths
+
 
 def find_all_launcher_paths_helper(input_dir: Path) -> List[str]:
     dir_name = input_dir.as_posix()
