@@ -528,10 +528,12 @@ class GDriveLog(BaseModel):
     md5hash: str = Field(default="", description="md5 hash of the content of the files inside this gzip")
     files: List[Dict[str, Any]] = Field(default=[], description="meta data of the content of the gzip")
 
+
 class File(BaseModel):
     file_name: str = Field(default="")
     size: int = Field(default=0)
     md5hash: str = Field(default="")
+
 
 """
 laucher
@@ -572,6 +574,7 @@ def md5_update_from_dir(directory: Union[str, Path], hash: Hash) -> Hash:
 def md5_dir(directory: Union[str, Path]) -> str:
     return str(md5_update_from_dir(directory, hashlib.md5()).hexdigest())
 
+
 def fill_record_data(record: GDriveLog, raw_dir: Path, compress_dir: Path):
     compress_file_dir = (compress_dir / record.path).as_posix() + ".tar.gz"
     record.file_size = os.path.getsize(compress_file_dir)
@@ -582,3 +585,26 @@ def fill_record_data(record: GDriveLog, raw_dir: Path, compress_dir: Path):
                                  "size": os.path.getsize((raw_dir / record.path / file).as_posix()),
                                  "md5hash": md5_file((raw_dir / record.path / file).as_posix())})
             print(record.files)
+
+
+def find_all_launcher_paths(input_dir: Path) -> List[str]:
+    paths: List[str] = []
+    for root, dirs, files in os.walk(input_dir.as_posix()):
+        for name in dirs:
+            if "launcher" in name:
+                sub_paths = find_all_launcher_paths_helper(Path(root) / name)
+                paths.extend(sub_paths)
+    return paths
+
+def find_all_launcher_paths_helper(input_dir: Path) -> List[str]:
+    dir_name = input_dir.as_posix()
+    start = dir_name.find("block_")
+    dir_name = dir_name[start:]
+
+    paths: List[str] = [dir_name]  # since itself is a launcher path
+    for root, dirs, files in os.walk(input_dir.as_posix()):
+        for name in dirs:
+            if "launcher" in name:
+                sub_paths = find_all_launcher_paths_helper(Path(root) / name)
+                paths.extend(sub_paths)
+    return paths
