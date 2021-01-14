@@ -14,7 +14,7 @@ from collections import defaultdict, deque
 from hpsspy import HpssOSError
 from hpsspy.os.path import isfile
 from emmet.cli.utils import VaspDirsGenerator, EmmetCliError, ReturnCodes
-from emmet.cli.utils import ensure_indexes, get_subdir, parse_vasp_dirs
+from emmet.cli.utils import ensure_indexes, get_subdir, parse_vasp_dirs, find_all_launcher_paths
 from emmet.cli.utils import chunks, iterator_slice
 from emmet.cli.decorators import sbatch
 from emmet.cli.utils import compress_launchers, find_un_uploaded_materials_task_id, move_dir, GDriveLog, fill_record_data
@@ -425,14 +425,15 @@ def compress(input_dir, output_dir, nproc):
     full_output_dir: Path = (Path(directory) / output_dir)
     if full_input_dir.exists() is False:
         raise FileNotFoundError(f"input_dir {full_input_dir.as_posix()} not found")
-    paths: List[str] = []
-    for root, dirs, files in os.walk(full_input_dir.as_posix()):
-        for name in dirs:
-            if "launcher" in name:
-                dir_name = os.path.join(root, name)
-                start = dir_name.find("block_")
-                dir_name = dir_name[start:]
-                paths.append(dir_name)
+
+    paths: List[str] = find_all_launcher_paths(full_input_dir)
+    # for root, dirs, files in os.walk(full_input_dir.as_posix()):
+    #     for name in dirs:
+    #         if "launcher" in name:
+    #             dir_name = os.path.join(root, name)
+    #             start = dir_name.find("block_")
+    #             dir_name = dir_name[start:]
+    #             paths.append(dir_name)
 
     path_organized_by_blocks: Dict[str, List[str]] = dict()
     for path in paths:
@@ -744,7 +745,7 @@ def find_unuploaded_launcher_paths(outputfile, configfile, num) -> List[GDriveLo
     logger.info("gdrive, material, and tasks mongo store successfully connected")
 
     # find un-uploaded materials task ids
-    task_ids: List[str] = find_un_uploaded_materials_task_id(gdrive_mongo_store, material_mongo_store, max_num=num)
+    task_ids: List[str] = ["mp-1383255"]#find_un_uploaded_materials_task_id(gdrive_mongo_store, material_mongo_store, max_num=num)
     logger.info(f"Found [{len(task_ids)}] task_ids for [{num}] materials")
 
     if outputfile.exists():
