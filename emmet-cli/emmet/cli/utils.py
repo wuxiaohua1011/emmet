@@ -572,13 +572,6 @@ class File(BaseModel):
     md5hash: str = Field(default="")
 
 
-"""
-laucher
-    - vasprun
-    - 
-"""
-
-
 def move_dir(src: str, dst: str, pattern: str):
     for file_path in glob(f'{src}/{pattern}'):
         logger.info(f"Moving [{file_path}] to [{dst}]")
@@ -609,6 +602,12 @@ def md5_update_from_dir(directory: Union[str, Path], hash: Hash) -> Hash:
 
 
 def md5_dir(directory: Union[str, Path]) -> str:
+    """
+    TODO ask patrick how does he want me to expose it?
+    :param directory: directory to compute md5 hash on
+    :return:
+        the hash in string
+    """
     return str(md5_update_from_dir(directory, hashlib.md5()).hexdigest())
 
 
