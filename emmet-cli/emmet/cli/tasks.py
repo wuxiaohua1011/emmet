@@ -689,7 +689,7 @@ def find_unuploaded_launcher_paths(outputfile, configfile, num) -> List[GDriveLo
     logger.info("gdrive, material, and tasks mongo store successfully connected")
 
     # find un-uploaded materials task ids
-    task_ids: List[str] = ["mp-1383255"]#find_un_uploaded_materials_task_id(gdrive_mongo_store, material_mongo_store, max_num=num)
+    task_ids: List[str] = ["mp-1383255"] #find_un_uploaded_materials_task_id(gdrive_mongo_store, material_mongo_store, max_num=num)
     logger.info(f"Found [{len(task_ids)}] task_ids for [{num}] materials")
 
     if outputfile.exists():

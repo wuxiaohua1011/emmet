@@ -598,7 +598,7 @@ def getListOfFiles(dirName):
 
 
 def _make_file_dict(file_path: Path, start_at: str) -> dict:
-    start_index = file_path.as_posix().find(start_at) + len(start_at)
+    start_index = file_path.as_posix().find(start_at) + len(start_at) + 1  # there is a slash after that
     path = file_path.as_posix()[start_index:]
     return {"path": path,
             "size": os.path.getsize(file_path.as_posix()),
