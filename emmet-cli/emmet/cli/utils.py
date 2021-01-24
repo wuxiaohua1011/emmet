@@ -513,7 +513,7 @@ def find_materials_task_id_helper(material_mongo_store, max_num, exclude_list=No
     result: List[str] = []
     materials = material_mongo_store.query(criteria=
         {"$and": [{"deprecated": False},
-                  {"$nin": {"task_id": exclude_list}}]},
+                  {"task_id": {"$nin": exclude_list}}]},
         properties={"task_id": 1, "blessed_tasks": 1,
                     "last_updated": 1},
         sort={"last_updated": Sort.Descending},
