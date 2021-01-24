@@ -418,13 +418,6 @@ def compress(input_dir, output_dir, nproc):
         raise FileNotFoundError(f"input_dir {full_input_dir.as_posix()} not found")
 
     paths: List[str] = find_all_launcher_paths(full_input_dir)
-    # for root, dirs, files in os.walk(full_input_dir.as_posix()):
-    #     for name in dirs:
-    #         if "launcher" in name:
-    #             dir_name = os.path.join(root, name)
-    #             start = dir_name.find("block_")
-    #             dir_name = dir_name[start:]
-    #             paths.append(dir_name)
 
     path_organized_by_blocks: Dict[str, List[str]] = dict()
     for path in paths:
@@ -586,7 +579,7 @@ def upload_latest(mongo_configfile, num_materials):
 
         # restore
         restore_cmds = base_cmds + ["restore", "--inputfile", full_emmet_input_file_path.as_posix()]
-        # run_and_log_info(args=restore_cmds)
+        run_and_log_info(args=restore_cmds)
         logger.info(f"Restoring using command [{' '.join(restore_cmds)}]")
         logger.info("DBUGGING, NOT EXECUTING")
 
@@ -616,8 +609,8 @@ def upload_latest(mongo_configfile, num_materials):
 
         # run clean up command
         # DANGEROUS!!
-        # remove_raw = ["rclone", "purge", f"{(full_root_dir/'raw').as_posix()}"]
-        # run_and_log_info(args=remove_raw)
+        remove_raw = ["rclone", "purge", f"{(full_root_dir/'raw').as_posix()}"]
+        run_and_log_info(args=remove_raw)
     else:
         logger.info("Run flag not supplied...")
     return ReturnCodes.SUCCESS
