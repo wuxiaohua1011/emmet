@@ -545,6 +545,7 @@ def find_un_uploaded_materials_task_id(gdrive_mongo_store: MongograntStore,
 def find_materials_task_id_helper(material_mongo_store, max_num, exclude_list=None) -> List[str]:
     if exclude_list is None:
         exclude_list = []
+    print(f"About to query excluding {exclude_list}")
     result: List[str] = []
     materials = material_mongo_store.query(criteria=
         {"$and": [{"deprecated": False},
@@ -553,6 +554,7 @@ def find_materials_task_id_helper(material_mongo_store, max_num, exclude_list=No
                     "last_updated": 1},
         sort={"last_updated": Sort.Descending},
         limit=max_num)
+    print(f"found {materials}")
     for material in materials:
         if "blessed_tasks" in material:
             blessed_tasks: dict = material["blessed_tasks"]
