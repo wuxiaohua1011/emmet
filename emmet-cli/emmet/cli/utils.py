@@ -491,7 +491,7 @@ def find_un_uploaded_materials_task_id(gdrive_mongo_store: MongograntStore,
     while len(result) < max_num and retry < 5:
         # fetch again from materials mongo store if there are more space
         materials: List[str] = find_materials_task_id_helper(material_mongo_store=material_mongo_store,
-                                                             max_num=max_num, exclude_list=list(result))
+                                                             max_num=max_num, exclude_list=list(gdrive_mp_ids))
 
         # remove any of them that are not in gdrive store
         result = set(materials)
