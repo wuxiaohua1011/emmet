@@ -518,6 +518,7 @@ def find_un_uploaded_materials_task_id(gdrive_mongo_store: MongograntStore,
     # fetch max_num materials from materials mongo store
     materials: List[str] = find_materials_task_id_helper(material_mongo_store=material_mongo_store,
                                                          max_num=max_num, exclude_list=[])
+    logger.debug(f"Processing materials [{materials}]")
     result: Set[str] = set(materials)
     # remove any of them that are already in the gdrive store
     gdrive_mp_ids = set(
