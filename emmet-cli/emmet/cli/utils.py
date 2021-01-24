@@ -556,6 +556,7 @@ def find_materials_task_id_helper(material_mongo_store, max_num, exclude_list=No
         sort={"last_updated": Sort.Descending},
         limit=max_num)
     for material in materials:
+        print(material)
         if "blessed_tasks" in material:
             blessed_tasks: dict = material["blessed_tasks"]
             result.extend(list(blessed_tasks.values()))
