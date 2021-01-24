@@ -497,7 +497,6 @@ def find_un_uploaded_materials_task_id(gdrive_mongo_store: MongograntStore,
 
         # remove any of them that are not in gdrive store
         result = set(materials)
-        print(f"found additional {result}")
 
         # remove any of them that are already in the gdrive store
         gdrive_mp_ids = set(
@@ -512,8 +511,9 @@ def find_materials_task_id_helper(material_mongo_store, max_num, exclude_list=No
     if exclude_list is None:
         exclude_list = []
     result: List[str] = []
-    materials = material_mongo_store.query(criteria={"$and": [
-        {"deprecated": False}, {"material_id": {"$nin": exclude_list}}]},
+    materials = material_mongo_store.query(criteria=
+        {"$and": [{"deprecated": False},
+                  {"$nin": {"material_id": exclude_list}}]},
         properties={"task_id": 1, "blessed_tasks": 1,
                     "last_updated": 1},
         sort={"last_updated": Sort.Descending},
