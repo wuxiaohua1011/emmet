@@ -520,6 +520,7 @@ def find_un_uploaded_materials_task_id(gdrive_mongo_store: MongograntStore,
                                                          max_num=max_num, exclude_list=[])
     result: Set[str] = set(materials)
     # remove any of them that are already in the gdrive store
+    print([i for i in  gdrive_mongo_store.query(criteria={"task_id": {"$in": list(result)}}, properties={"task_id": 1})])
     gdrive_mp_ids = set(
         gdrive_mongo_store.query(criteria={"task_id": {"$in": list(result)}}, properties={"task_id": 1}))
     result = result.difference(gdrive_mp_ids)
