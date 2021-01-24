@@ -488,7 +488,7 @@ def find_un_uploaded_materials_task_id(gdrive_mongo_store: MongograntStore,
     gdrive_mp_ids = set(
         [entry["task_id"] for entry in gdrive_mongo_store.query(criteria={"task_id": {"$in": list(result)}},
                                                                 properties={"task_id": 1})])
-    result = result.difference(gdrive_mp_ids)
+    result = result.intersection(gdrive_mp_ids)
     retry = 0  # if there are really no more materials to add, just exit
     while len(result) < max_num and retry < 5:
         # fetch again from materials mongo store if there are more space
@@ -497,12 +497,12 @@ def find_un_uploaded_materials_task_id(gdrive_mongo_store: MongograntStore,
 
         # remove any of them that are not in gdrive store
         result = set(materials)
-        print(f"Found addtional {result}")
+        print(result)
         # remove any of them that are already in the gdrive store
         gdrive_mp_ids = set(
             [entry["task_id"] for entry in gdrive_mongo_store.query(criteria={"task_id": {"$in": list(result)}},
                                                                     properties={"task_id": 1})])
-        result = result.difference(gdrive_mp_ids)
+        result = result.intersection(gdrive_mp_ids)
         retry += 1
     return list(result)
 
@@ -511,7 +511,6 @@ def find_materials_task_id_helper(material_mongo_store, max_num, exclude_list=No
     if exclude_list is None:
         exclude_list = []
     result: List[str] = []
-    print(exclude_list)
     materials = material_mongo_store.query(criteria=
         {"$and": [{"deprecated": False},
                   {"task_id": {"$nin": exclude_list}}]},
