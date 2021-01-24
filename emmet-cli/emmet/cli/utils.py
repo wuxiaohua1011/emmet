@@ -31,7 +31,7 @@ from typing import List, Dict
 import tarfile
 import subprocess, shlex
 from pydantic import BaseModel, Field
-from typing import List, Dict, Set, Any
+from typing import List, Dict, Set, Any, Optional
 from maggma.stores.advanced_stores import MongograntStore
 from maggma.core.store import Sort
 
@@ -547,21 +547,19 @@ def find_materials_task_id_helper(material_mongo_store, max_num, exclude_list=No
         exclude_list = []
     print(f"About to query excluding {exclude_list}")
     result: List[str] = []
-    materials = material_mongo_store.query(criteria=
-        {"$and": [{"deprecated": False},
-                  {"task_id": {"$nin": exclude_list}}]},
-        properties={"task_id": 1, "blessed_tasks": 1,
-                    "last_updated": 1},
+    materials = material_mongo_store.query(
+        criteria={"$and": [{"deprecated": False}, {"task_id": {"$nin": exclude_list}}]},
+        properties={"task_id": 1, "blessed_tasks": 1, "last_updated": 1},
         sort={"last_updated": Sort.Descending},
         limit=max_num)
 
+    print("materials found")
     print([m for m in materials])
 
     for material in materials:
         if "blessed_tasks" in material:
             blessed_tasks: dict = material["blessed_tasks"]
             result.extend(list(blessed_tasks.values()))
-    print(result)
     return result
 
 
@@ -573,7 +571,7 @@ class GDriveLog(BaseModel):
     file_size: int = Field(default=0, description="file size of the tar.gz")
     md5hash: str = Field(default="", description="md5 hash of the content of the files inside this gzip")
     files: List[Dict[str, Any]] = Field(default=[], description="meta data of the content of the gzip")
-
+    nomad_updated: Optional[datetime] = Field(default=None)
 
 class File(BaseModel):
     file_name: str = Field(default="")
