@@ -30,7 +30,7 @@ from typing import List, Dict
 import tarfile
 import subprocess, shlex
 from pydantic import BaseModel, Field
-from typing import List, Dict, Set, Any, Optional
+from typing import List, Dict, Set, Any, Optional, Tuple
 from maggma.stores.advanced_stores import MongograntStore
 from maggma.core.store import Sort
 
@@ -479,9 +479,9 @@ def find_un_uploaded_materials_task_id(gdrive_mongo_store: MongograntStore,
     """
 
     # fetch max_num materials from materials mongo store
-    materials: List[str] = find_materials_task_id_helper(material_mongo_store=material_mongo_store,
-                                                         max_num=max_num, exclude_list=[])
-    result: Set[str] = set(materials)
+    material_ids, task_ids = find_materials_task_id_helper(material_mongo_store=material_mongo_store,
+                                                           max_num=max_num, exclude_list=[])
+    result: Set[str] = set(task_ids)
     # remove any of them that are already in the gdrive store
     gdrive_mp_ids = set(
         [entry["task_id"] for entry in gdrive_mongo_store.query(criteria={"task_id": {"$in": list(result)}},
@@ -490,10 +490,10 @@ def find_un_uploaded_materials_task_id(gdrive_mongo_store: MongograntStore,
     retry = 0  # if there are really no more materials to add, just exit
     while len(result) < max_num and retry < 5:
         # fetch again from materials mongo store if there are more space
-        materials: List[str] = find_materials_task_id_helper(material_mongo_store=material_mongo_store,
-                                                             max_num=max_num, exclude_list=list(gdrive_mp_ids))
+        material_ids, task_ids = find_materials_task_id_helper(material_mongo_store=material_mongo_store,
+                                                               max_num=max_num, exclude_list=list(material_ids))
         # remove any of them that are not in gdrive store
-        result = set(materials)
+        result = set(task_ids)
         # remove any of them that are already in the gdrive store
         gdrive_mp_ids = set(
             [entry["task_id"] for entry in gdrive_mongo_store.query(criteria={"task_id": {"$in": list(result)}},
@@ -503,11 +503,20 @@ def find_un_uploaded_materials_task_id(gdrive_mongo_store: MongograntStore,
     return list(result)
 
 
-def find_materials_task_id_helper(material_mongo_store, max_num, exclude_list=None) -> List[str]:
+def find_materials_task_id_helper(material_mongo_store, max_num, exclude_list=None) -> Tuple[List[str], List[str]]:
+    """
+
+    :param material_mongo_store:
+    :param max_num:
+    :param exclude_list:
+    :return:
+        (material_ids, task_ids)
+    """
     if exclude_list is None:
         exclude_list = []
     print(f"About to query excluding {exclude_list}")
-    result: List[str] = []
+    material_ids: Set[str] = set()
+    task_ids: List[str] = []
     materials = material_mongo_store.query(
         criteria={"$and": [{"deprecated": False}, {"task_id": {"$nin": exclude_list}}]},
         properties={"task_id": 1, "blessed_tasks": 1, "last_updated": 1},
@@ -520,8 +529,9 @@ def find_materials_task_id_helper(material_mongo_store, max_num, exclude_list=No
     for material in materials:
         if "blessed_tasks" in material:
             blessed_tasks: dict = material["blessed_tasks"]
-            result.extend(list(blessed_tasks.values()))
-    return result
+            task_ids.extend(list(blessed_tasks.values()))
+            material_ids.add(material["task_id"])
+    return list(material_ids), task_ids
 
 
 class GDriveLog(BaseModel):
