@@ -490,8 +490,10 @@ def find_un_uploaded_materials_task_id(gdrive_mongo_store: MongograntStore,
     retry = 0  # if there are really no more materials to add, just exit
     while len(result) < max_num and retry < 5:
         # fetch again from materials mongo store if there are more space
+        print(f"Excluding {material_ids}")
         material_ids, task_ids = find_materials_task_id_helper(material_mongo_store=material_mongo_store,
                                                                max_num=max_num, exclude_list=list(material_ids))
+        print(f"Found {len(task_ids)} tasks for material_ids {material_ids}")
         # remove any of them that are not in gdrive store
         result = set(task_ids)
         # remove any of them that are already in the gdrive store
@@ -514,7 +516,6 @@ def find_materials_task_id_helper(material_mongo_store, max_num, exclude_list=No
     """
     if exclude_list is None:
         exclude_list = []
-    print(f"About to query excluding {exclude_list}")
     material_ids: Set[str] = set()
     task_ids: List[str] = []
     materials = material_mongo_store.query(
@@ -522,9 +523,6 @@ def find_materials_task_id_helper(material_mongo_store, max_num, exclude_list=No
         properties={"task_id": 1, "blessed_tasks": 1, "last_updated": 1},
         sort={"last_updated": Sort.Descending},
         limit=max_num)
-
-    print("materials found")
-    print([m for m in materials])
 
     for material in materials:
         if "blessed_tasks" in material:
