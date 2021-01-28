@@ -539,13 +539,12 @@ def find_materials_task_id_helper(material_mongo_store, max_num, exclude_list=No
     material_ids: Set[str] = set()
     task_ids: List[str] = []
     materials = material_mongo_store.query(
-        criteria={"$and": [{"deprecated": False}, {"task_id": {"$nin": exclude_list}}]},
+        criteria={"$and": [{"deprecated": False}, {"blessed_tasks": {"$nin": exclude_list}}]},
         properties={"task_id": 1, "blessed_tasks": 1, "last_updated": 1},
         sort={"last_updated": Sort.Descending},
         limit=max_num)
 
     for material in materials:
-        print(material)
         if "blessed_tasks" in material:
             blessed_tasks: dict = material["blessed_tasks"]
             task_ids.extend(list(blessed_tasks.values()))
