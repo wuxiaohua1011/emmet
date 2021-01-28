@@ -536,6 +536,7 @@ def find_un_uploaded_materials_task_id(gdrive_mongo_store: MongograntStore,
             [entry["task_id"] for entry in gdrive_mongo_store.query(criteria={"task_id": {"$in": list(result)}},
                                                                     properties={"task_id": 1})])
         result = result - gdrive_mp_ids
+        print(f"result {result}")
         retry += 1
     return list(result)
 
