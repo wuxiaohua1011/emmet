@@ -484,10 +484,6 @@ def find_un_uploaded_materials_task_id(gdrive_mongo_store: MongograntStore,
     # find max_num materials from mateirals_mongo_store that is not in gdrive_log
     material_ids, task_ids = find_materials_task_id_helper(material_mongo_store=material_mongo_store, max_num=max_num,
                                                            exclude_list=gdrive_mp_ids)
-
-    # fetch max_num materials from materials mongo store
-    material_ids, task_ids = find_materials_task_id_helper(material_mongo_store=material_mongo_store,
-                                                           max_num=max_num, exclude_list=[])
     print(task_ids)
     return task_ids
 
