@@ -545,6 +545,7 @@ def find_materials_task_id_helper(material_mongo_store, max_num, exclude_list=No
         limit=max_num)
 
     for material in materials:
+        print(material)
         if "blessed_tasks" in material:
             blessed_tasks: dict = material["blessed_tasks"]
             task_ids.extend(list(blessed_tasks.values()))
