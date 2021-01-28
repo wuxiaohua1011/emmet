@@ -579,7 +579,7 @@ def upload_latest(mongo_configfile, num_materials):
                                                                            num=num_materials)
             # restore
             restore_cmds = base_cmds + ["restore", "--inputfile", full_emmet_input_file_path.as_posix()]
-            run_and_log_info(args=restore_cmds)
+            # run_and_log_info(args=restore_cmds)
             logger.info(f"Restoring using command [{' '.join(restore_cmds)}]")
             logger.info("DBUGGING, NOT EXECUTING")
 
@@ -687,7 +687,7 @@ def find_unuploaded_launcher_paths(outputfile, configfile, num) -> List[GDriveLo
     # find un-uploaded materials task ids
     task_ids: List[str] = find_un_uploaded_materials_task_id(gdrive_mongo_store, material_mongo_store, max_num=num)
     logger.info(f"Found [{len(task_ids)}] task_ids for [{num}] materials")
-
+    logger.info(f"Task_ids = {task_ids}")
     if outputfile.exists():
         logger.info(f"Will be over writing {outputfile}")
     else:
