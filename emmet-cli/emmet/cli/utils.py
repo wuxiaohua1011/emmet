@@ -527,10 +527,8 @@ def find_un_uploaded_materials_task_id(gdrive_mongo_store: MongograntStore,
     retry = 0  # if there are really no more materials to add, just exit
     while len(result) < max_num and retry < 5:
         # fetch again from materials mongo store if there are more space
-        print(f"Excluding {material_ids}")
         material_ids, task_ids = find_materials_task_id_helper(material_mongo_store=material_mongo_store,
                                                                max_num=max_num, exclude_list=list(material_ids))
-        print(f"Found {len(task_ids)} tasks for material_ids {material_ids}")
         # remove any of them that are not in gdrive store
         result = set(task_ids)
         # remove any of them that are already in the gdrive store
