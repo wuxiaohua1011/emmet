@@ -559,7 +559,8 @@ def move_dir(src: str, dst: str, pattern: str):
     for file_path in glob(f'{src}/{pattern}'):
         logger.info(f"Moving [{file_path}] to [{dst}]")
         try:
-            copyDirTree(root_src_dir=file_path, root_dst_dir=dst)
+            print(f"moving {file_path} to {dst}")
+            # copyDirTree(root_src_dir=file_path, root_dst_dir=dst)
             # shutil.move(src=file_path, dst=f"{dst}")
         except Exception as e:
             logger.warning(e)
