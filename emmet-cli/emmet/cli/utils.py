@@ -620,18 +620,78 @@ def nomad_find_not_uploaded(gdrive_mongo_store: MongograntStore, username: str, 
     """
     raw = gdrive_mongo_store.query(
         criteria={"$and": [{"nomad_updated": None}, {"error": None}]},
-        properties={"task_id": 1},
+        properties={"task_id": 1, "file_size":1},
         sort={"last_updated": Sort.Ascending},
         limit=num
     )
-    return [r["task_id"] for r in raw]
+    max_nomad_upload_size = 32 * 1e9  # 32 gb
+    size = 0
+    result: List[str] = []
+    for r in raw:
+        task_id = r["task_id"]
+        file_size = r["file_size"]
+        if size + file_size < max_nomad_upload_size:
+            result.append(task_id)
+        else:
+            break
+    return result
 
 
 def nomad_upload_data(task_ids: List[str], username: str, password: str, gdrive_mongo_store: MongograntStore,
                       root_dir: Path):
-    pass
+    """
+    it is gaurenteed that sum of the file_size of the task_ids is less than 32 gb.
+
+    :param task_ids:
+    :param username:
+    :param password:
+    :param gdrive_mongo_store:
+    :param root_dir:
+    :return:
+    """
+    # create the bravado client
+    nomad_url = 'http://nomad-lab.eu/prod/rae/mp/api'
+    http_client = RequestsClient()
+    http_client.authenticator = KeycloakAuthenticator(user=username, password=password, nomad_url=nomad_url)
+    client: SwaggerClient = SwaggerClient.from_url('%s/swagger.json' % nomad_url, http_client=http_client)
+
+    raw = gdrive_mongo_store.query(criteria={"task_id": {"$in": task_ids}})
+    records: List[GDriveLog] = [GDriveLog.from_orm(record) for record in raw]
+    uploads = []
+    for record in records:
+        full_file_path = (root_dir / record.path)
+        if not full_file_path.exists():
+            record.error = f"Record can no longer be found in {root_dir}"
+        else:
+            upload = nomad_upload_helper(client=client, file=full_file_path.open('rb'))
+            record.nomad_upload_id = upload.upload_id
+            record.nomad_updated = datetime.now()
+            uploads.append(upload)
+
+    # wait until all uploades are completed
+    while True:
+        should_break = True
+        for upload in uploads:
+            if upload.tasks_running:
+                should_break = False
+        if should_break:
+            break
+
+    for upload in uploads:
+        if upload.tasks_status != 'SUCCESS':
+            logger.error(f"Something went wrong. Cannot record with upload id [{upload.upload_id}] failed: {upload.errors}")
+            client.uploads.delete_upload(upload_id=upload.upload_id).response().result
+
+    return True
 
 
+
+
+
+
+def nomad_upload_helper(client, file):
+    upload = client.uploads.upload(file=file, publish_directly=True).response().result
+    return upload
 def md5_update_from_file(filename: Union[str, Path], hash: Hash) -> Hash:
     assert Path(filename).is_file()
     with open(str(filename), "rb") as f:
