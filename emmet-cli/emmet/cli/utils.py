@@ -625,8 +625,8 @@ def nomad_upload_data(task_ids: List[str], username: str, password: str, gdrive_
         print(record.path)
         full_file_path = (root_dir / record.path)
         if not full_file_path.exists():
-            record.error = f"Record can no longer be found in {root_dir}"
-            logger.info(f"File not found: Record can no longer be found in {root_dir}")
+            record.error = f"Record can no longer be found in {full_file_path}"
+            logger.info(f"File not found: Record can no longer be found in {full_file_path}")
         else:
             upload = nomad_upload_helper(client=client, file=full_file_path.open('rb'))
             record.nomad_upload_id = upload.upload_id
