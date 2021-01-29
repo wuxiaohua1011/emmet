@@ -529,7 +529,6 @@ def find_un_uploaded_materials_task_id(gdrive_mongo_store: MongograntStore,
         # fetch again from materials mongo store if there are more space
         material_ids, task_ids = find_materials_task_id_helper(material_mongo_store=material_mongo_store,
                                                                max_num=max_num, exclude_list=list(material_ids))
-        print(material_ids, task_ids)
         # remove any of them that are not in gdrive store
         result_gdrive_task_ids = set(task_ids)
         # remove any of them that are already in the gdrive store
