@@ -703,7 +703,9 @@ def upload_to_nomad(nomad_configfile, num):
         cred: dict = json.load(full_nomad_config_path.open('r'))
         username: str = cred["username"]
         password: str = cred["password"]
-        print(username, password)
+        # find the latest n tasks that has not been uploaded
+
+        # upload those n tasks
 
     else:
         logger.info("Not running. Please supply the run flag. ")
