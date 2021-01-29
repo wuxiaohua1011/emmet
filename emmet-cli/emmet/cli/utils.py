@@ -653,7 +653,7 @@ def nomad_upload_data(task_ids: List[str], username: str, password: str, gdrive_
             print(upload.tasks_status)
             logger.error(f"Something went wrong. Cannot record with upload id [{upload.upload_id}] failed: {upload.errors}")
             client.uploads.delete_upload(upload_id=upload_id).response().result
-
+    gdrive_mongo_store.update(docs=[record.dict() for record in records], key="task_id")
     return True
 
 
