@@ -604,7 +604,28 @@ def move_dir(src: str, dst: str, pattern: str):
 
 
 def nomad_find_not_uploaded(gdrive_mongo_store: MongograntStore, username: str, password: str, num: int) -> List[str]:
-    return []
+    """
+    1. find a list of tasks that are not uploaded to nomad, sort ascending based on date created. limit by num
+
+    :param gdrive_mongo_store:
+    :param username:
+    :param password:
+    :param num:
+    :return:
+        materials = material_mongo_store.query(
+        criteria={"$and": [{"deprecated": False}, {"task_id": {"$nin": exclude_list}}]},
+        properties={"task_id": 1, "blessed_tasks": 1, "last_updated": 1},
+        sort={"last_updated": Sort.Descending},
+        limit=max_num)
+    """
+    raw = gdrive_mongo_store.query(
+        criteria={"$and": [{"nomad_updated": None}, {"error": None}]},
+        properties={"task_id": 1},
+        sort={"last_updated": Sort.Ascending},
+        limit=num
+    )
+
+    return [r["task_id"] for r in raw]
 
 
 def nomad_upload_data(task_ids: List[str], username: str, password: str, gdrive_mongo_store: MongograntStore,
