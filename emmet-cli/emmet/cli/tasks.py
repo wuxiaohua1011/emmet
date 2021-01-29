@@ -635,7 +635,7 @@ def upload_latest(mongo_configfile, num_materials):
                                                                            num=num_materials)
             # restore
             restore_cmds = base_cmds + ["restore", "--inputfile", full_emmet_input_file_path.as_posix()]
-            # run_and_log_info(args=restore_cmds)
+            run_and_log_info(args=restore_cmds)
             logger.info(f"Restoring using command [{' '.join(restore_cmds)}]")
             logger.info("DBUGGING, NOT EXECUTING")
 
