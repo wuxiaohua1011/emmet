@@ -526,8 +526,9 @@ def find_un_uploaded_materials_task_id(gdrive_mongo_store: MongograntStore,
     result_gdrive_task_ids: Set[str] = set(task_ids)
     # remove any of them that are already in the gdrive store
     gdrive_task_id = set(
-        [entry["task_id"] for entry in gdrive_mongo_store.query(criteria={"task_id": {"$in": list(result_gdrive_task_ids)}},
-                                                                properties={"task_id": 1})])
+        [entry["task_id"] for entry in
+         gdrive_mongo_store.query(criteria={"task_id": {"$in": list(result_gdrive_task_ids)}},
+                                  properties={"task_id": 1})])
     result_gdrive_task_ids = result_gdrive_task_ids - gdrive_task_id
     retry = 0  # if there are really no more materials to add, just exit
     while len(result_gdrive_task_ids) < max_num and retry < 5:
@@ -538,8 +539,9 @@ def find_un_uploaded_materials_task_id(gdrive_mongo_store: MongograntStore,
         result_gdrive_task_ids = set(task_ids)
         # remove any of them that are already in the gdrive store
         gdrive_task_id = set(
-            [entry["task_id"] for entry in gdrive_mongo_store.query(criteria={"task_id": {"$in": list(result_gdrive_task_ids)}},
-                                                                    properties={"task_id": 1})])
+            [entry["task_id"] for entry in
+             gdrive_mongo_store.query(criteria={"task_id": {"$in": list(result_gdrive_task_ids)}},
+                                      properties={"task_id": 1})])
         result_gdrive_task_ids = result_gdrive_task_ids - gdrive_task_id
         retry += 1
     return list(result_gdrive_task_ids)
@@ -583,6 +585,7 @@ class GDriveLog(BaseModel):
     nomad_updated: Optional[datetime] = Field(default=None)
     nomad_upload_id: Optional[str] = Field(default=None)
 
+
 class File(BaseModel):
     file_name: str = Field(default="")
     size: int = Field(default=0)
@@ -593,10 +596,34 @@ def move_dir(src: str, dst: str, pattern: str):
     for file_path in glob(f'{src}/{pattern}'):
         logger.info(f"Moving [{file_path}] to [{dst}]")
         try:
-            shutil.move(src=file_path, dst=f"{dst}")
+            copyDirTree(root_src_dir=file_path, root_dst_dir=dst)
+            # shutil.move(src=file_path, dst=f"{dst}")
         except Exception as e:
             logger.warning(e)
             logger.info("not moving this directory because it already existed for some reason.")
+
+
+def copyDirTree(root_src_dir, root_dst_dir):
+    """
+    Copy directory tree. Overwrites also read only files.
+    :param root_src_dir: source directory
+    :param root_dst_dir:  destination directory
+    """
+    for src_dir, dirs, files in os.walk(root_src_dir):
+        dst_dir = src_dir.replace(root_src_dir, root_dst_dir, 1)
+        if not os.path.exists(dst_dir):
+            os.makedirs(dst_dir)
+        for file_ in files:
+            src_file = os.path.join(src_dir, file_)
+            dst_file = os.path.join(dst_dir, file_)
+            if os.path.exists(dst_file):
+                try:
+                    os.remove(dst_file)
+                except PermissionError as exc:
+                    os.chmod(dst_file, stat.S_IWUSR)
+                    os.remove(dst_file)
+
+            shutil.copy(src_file, dst_dir)
 
 
 def md5_update_from_file(filename: Union[str, Path], hash: Hash) -> Hash:
@@ -636,7 +663,7 @@ def fill_record_data(record: GDriveLog, raw_dir: Path, compress_dir: Path):
     compress_file_dir = (compress_dir / record.path).as_posix() + ".tar.gz"
     record.file_size = os.path.getsize(compress_file_dir)
     record.md5hash = md5_dir(raw_dir / record.path)
-    list_of_files = getListOfFiles(dirName= (raw_dir / record.path).as_posix())
+    list_of_files = getListOfFiles(dirName=(raw_dir / record.path).as_posix())
     record.files.extend([_make_file_dict(file_path=Path(file), start_at=record.path) for file in list_of_files])
 
 
