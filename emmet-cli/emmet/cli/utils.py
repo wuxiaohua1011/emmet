@@ -565,28 +565,8 @@ def move_dir(src: str, dst: str, pattern: str):
             logger.info("not moving this directory because it already existed for some reason.")
 
 
-def copyDirTree(root_src_dir, root_dst_dir):
-    """
-    Copy directory tree. Overwrites also read only files.
-    :param root_src_dir: source directory
-    :param root_dst_dir:  destination directory
-    """
-    for src_dir, dirs, files in os.walk(root_src_dir):
-        dst_dir = src_dir.replace(root_src_dir, root_dst_dir, 1)
-        if not os.path.exists(dst_dir):
-            os.makedirs(dst_dir)
-        for file_ in files:
-            src_file = os.path.join(src_dir, file_)
-            dst_file = os.path.join(dst_dir, file_)
-            if os.path.exists(dst_file):
-                try:
-                    os.remove(dst_file)
-                except PermissionError as exc:
-                    os.chmod(dst_file, stat.S_IWUSR)
-                    os.remove(dst_file)
-
-            shutil.copy(src_file, dst_dir)
-
+def nomad_find_not_uploaded(gdrive_store:MongograntStore, username:str, password:str, num: int) -> List[str]:
+    pass
 
 def md5_update_from_file(filename: Union[str, Path], hash: Hash) -> Hash:
     assert Path(filename).is_file()

@@ -17,7 +17,7 @@ from emmet.cli.utils import VaspDirsGenerator, EmmetCliError, ReturnCodes
 from emmet.cli.utils import ensure_indexes, get_subdir, parse_vasp_dirs, find_all_launcher_paths
 from emmet.cli.utils import chunks, iterator_slice
 from emmet.cli.decorators import sbatch
-from emmet.cli.utils import compress_launchers, find_un_uploaded_materials_task_id, move_dir, GDriveLog, fill_record_data
+from emmet.cli.utils import compress_launchers, find_un_uploaded_materials_task_id, move_dir, GDriveLog, fill_record_data, nomad_find_not_uploaded
 
 import datetime
 from typing import List, Dict
@@ -637,7 +637,15 @@ def upload_latest(mongo_configfile, num_materials):
     type=click.IntRange(min=0, max=1000),
     help="maximum number of materials to upload"
 )
-def upload_to_nomad(nomad_configfile, num):
+@click.option(
+    "--mongo-configfile",
+    required=False,
+    default=Path("~/.mongogrant.json").expanduser().as_posix(),
+    type=click.Path(),
+    help="mongo db connections. Path should be full path."
+)
+def upload_to_nomad(nomad_configfile, num, mongo_configfile):
+    configfile: Path = Path(mongo_configfile)
     full_nomad_config_path: Path = Path(nomad_configfile).expanduser()
     num: int = num
     ctx = click.get_current_context()
@@ -645,14 +653,23 @@ def upload_to_nomad(nomad_configfile, num):
     directory = ctx.parent.params["directory"]
     full_root_dir: Path = Path(directory)
 
+    configfile: Path = Path(configfile)
+    if configfile.exists() is False:
+        raise FileNotFoundError(f"Config file [{configfile}] is not found")
+
+    # connect to mongo necessary mongo stores
+    gdrive_mongo_store = MongograntStore(mongogrant_spec="rw:knowhere.lbl.gov/mp_core_mwu",
+                                         collection_name="gdrive",
+                                         mgclient_config_path=configfile.as_posix())
+
     if run:
         if not full_nomad_config_path.exists():
             raise FileNotFoundError(f"Nomad Config file not found in {full_nomad_config_path}")
         cred: dict = json.load(full_nomad_config_path.open('r'))
         username: str = cred["username"]
         password: str = cred["password"]
-        # find the latest n tasks that has not been uploaded
-
+        # find the earliest n tasks that has not been uploaded
+        task_ids_not_uploaded: List[str] = nomad_find_not_uploaded(username=username, password=password, num=num)
         # upload those n tasks
 
     else:
@@ -681,7 +698,11 @@ def log_to_mongodb(mongo_configfile: str, task_records: List[GDriveLog], raw_dir
                                          mgclient_config_path=configfile.as_posix())
     gdrive_mongo_store.connect()
     for record in task_records:
-        fill_record_data(record, raw_dir, compress_dir)
+        try:
+            fill_record_data(record, raw_dir, compress_dir)
+        except Exception as e:
+            logger.error(f"Skipping logging this record because something weird happened: {e}. Will attempt again.")
+
     gdrive_mongo_store.update(docs=[record.dict() for record in task_records], key="path")
     logger.info(f"[{gdrive_mongo_store.collection_name}] Collection Updated")
 
