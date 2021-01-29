@@ -651,6 +651,7 @@ def upload_to_nomad(nomad_configfile, num):
 
     else:
         logger.info("Not running. Please supply the run flag. ")
+    return ReturnCodes.SUCCESS
 
 
 def log_to_mongodb(mongo_configfile: str, task_records: List[GDriveLog], raw_dir: Path, compress_dir: Path):
