@@ -569,6 +569,7 @@ def upload_latest(mongo_configfile, num_materials):
     full_root_dir: Path = Path(directory)
     full_mongo_config_path: Path = Path(mongo_configfile).expanduser()
     full_emmet_input_file_path: Path = full_root_dir / "emmet_input_file.txt"
+
     if run:
         try:
             base_cmds = ["emmet", "--run", "--yes", "--issue", "87", "tasks", "-d", full_root_dir.as_posix()]
@@ -578,39 +579,42 @@ def upload_latest(mongo_configfile, num_materials):
                                                                            configfile=full_mongo_config_path.as_posix(),
                                                                            num=num_materials)
             # restore
-            restore_cmds = base_cmds + ["restore", "--inputfile", full_emmet_input_file_path.as_posix()]
+            restore_dir = (full_root_dir / "restore")
+            if restore_dir.exists() is False:
+                restore_dir.mkdir(parents=True, exist_ok=True)
+            restore_cmds = base_cmds[:-1] + [restore_dir.as_posix()] + ["restore", "--inputfile", full_emmet_input_file_path.as_posix()]
             run_and_log_info(args=restore_cmds)
             logger.info(f"Restoring using command [{' '.join(restore_cmds)}]")
             logger.info("DBUGGING, NOT EXECUTING")
 
             # move restored content to directory/raw
-            move_dir(src=full_root_dir.as_posix(), dst=(full_root_dir / 'raw').as_posix(), pattern="block*")
+            move_dir(src=restore_dir.as_posix(), dst=(full_root_dir / 'raw').as_posix(), pattern="block*")
 
-            # run compressed cmd
-            compress_cmds = base_cmds + ["compress", "-l", "raw", "-o", "compressed", "--nproc", "4"]
-            logger.info(f"Compressing using command [{' '.join(compress_cmds)}]".strip())
-            run_and_log_info(args=compress_cmds)
-
-            # run upload cmd
-            upload_cmds = base_cmds + ["upload", "--input-dir", "compressed"]
-            logger.info(f"Uploading using command [{' '.join(upload_cmds)}]")
-            run_and_log_info(args=upload_cmds)
-
-            # log to mongodb
-            log_to_mongodb(mongo_configfile=mongo_configfile, task_records=task_records,
-                           raw_dir=full_root_dir / 'raw', compress_dir=full_root_dir / "compressed")
-
-            # move uploaded & compressed content to tmp long term storage
-            mv_cmds = ["rclone", "move",
-                       f"{(full_root_dir / 'compressed').as_posix()}",
-                       f"{(full_root_dir / 'tmp_storage').as_posix()}",
-                       "--delete-empty-src-dirs"]
-            run_and_log_info(args=mv_cmds)
-
-            # run clean up command
-            # DANGEROUS!!
-            remove_raw = ["rclone", "purge", f"{(full_root_dir/'raw').as_posix()}"]
-            run_and_log_info(args=remove_raw)
+            # # run compressed cmd
+            # compress_cmds = base_cmds + ["compress", "-l", "raw", "-o", "compressed", "--nproc", "4"]
+            # logger.info(f"Compressing using command [{' '.join(compress_cmds)}]".strip())
+            # run_and_log_info(args=compress_cmds)
+            #
+            # # run upload cmd
+            # upload_cmds = base_cmds + ["upload", "--input-dir", "compressed"]
+            # logger.info(f"Uploading using command [{' '.join(upload_cmds)}]")
+            # run_and_log_info(args=upload_cmds)
+            #
+            # # log to mongodb
+            # log_to_mongodb(mongo_configfile=mongo_configfile, task_records=task_records,
+            #                raw_dir=full_root_dir / 'raw', compress_dir=full_root_dir / "compressed")
+            #
+            # # move uploaded & compressed content to tmp long term storage
+            # mv_cmds = ["rclone", "move",
+            #            f"{(full_root_dir / 'compressed').as_posix()}",
+            #            f"{(full_root_dir / 'tmp_storage').as_posix()}",
+            #            "--delete-empty-src-dirs"]
+            # run_and_log_info(args=mv_cmds)
+            #
+            # # run clean up command
+            # # DANGEROUS!!
+            # remove_raw = ["rclone", "purge", f"{(full_root_dir/'raw').as_posix()}"]
+            # run_and_log_info(args=remove_raw)
         except Exception as e:
             logger.error(f"Something bad happened: {e}")
 
