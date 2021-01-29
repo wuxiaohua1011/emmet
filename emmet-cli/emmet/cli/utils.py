@@ -657,12 +657,12 @@ def nomad_upload_data(task_ids: List[str], username: str, password: str, gdrive_
 
     raw = gdrive_mongo_store.query(criteria={"task_id": {"$in": task_ids}})
     records: List[GDriveLog] = [GDriveLog.parse_obj(record) for record in raw]
-    print(records)
     uploads = []
     for record in records:
         full_file_path = (root_dir / record.path)
         if not full_file_path.exists():
             record.error = f"Record can no longer be found in {root_dir}"
+
         else:
             upload = nomad_upload_helper(client=client, file=full_file_path.open('rb'))
             record.nomad_upload_id = upload.upload_id
