@@ -657,9 +657,8 @@ def nomad_upload_data(task_ids: List[str], username: str, password: str, gdrive_
 
     raw = gdrive_mongo_store.query(criteria={"task_id": {"$in": task_ids}})
     records: List[GDriveLog] = [GDriveLog.parse_obj(record) for record in raw]
-    uploads:Dict[str: Any] = dict()
+    uploads: Dict[str: Any] = dict()
     for record in records:
-        print(record.path)
         full_file_path = (root_dir / (record.path + ".tar.gz"))
         if not full_file_path.exists():
             record.error = f"Record can no longer be found in {full_file_path}"
