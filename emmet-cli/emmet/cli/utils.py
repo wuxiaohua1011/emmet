@@ -659,6 +659,7 @@ def nomad_upload_data(task_ids: List[str], username: str, password: str, gdrive_
     records: List[GDriveLog] = [GDriveLog.parse_obj(record) for record in raw]
     uploads = []
     for record in records:
+        print(record.path)
         full_file_path = (root_dir / record.path)
         if not full_file_path.exists():
             record.error = f"Record can no longer be found in {root_dir}"
