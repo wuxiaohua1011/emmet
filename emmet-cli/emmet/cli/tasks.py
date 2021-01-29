@@ -666,13 +666,47 @@ def upload_latest(mongo_configfile, num_materials):
             # run clean up command
             # DANGEROUS!!
             remove_raw = ["rclone", "purge", f"{(full_root_dir/'raw').as_posix()}"]
-            # run_and_log_info(args=remove_raw)
+            run_and_log_info(args=remove_raw)
         except Exception as e:
             logger.error(f"Something bad happened: {e}")
 
     else:
         logger.info("Run flag not supplied...")
     return ReturnCodes.SUCCESS
+
+@tasks.command()
+@sbatch
+@click.option(
+    "--nomad-configfile",
+    required=True,
+    type=click.Path(),
+    help="nomad user name and password json file path. Path should be full path"
+)
+@click.option(
+    "-n",
+    "--num",
+    defaul=1000,
+    type=click.IntRange(min=0, max=1000),
+    help="maximum number of materials to upload"
+)
+def upload_to_nomad(nomad_configfile, num):
+    full_nomad_config_path: Path = Path(nomad_configfile).expanduser()
+    num: int = num
+    ctx = click.get_current_context()
+    run = ctx.parent.parent.params["run"]
+    directory = ctx.parent.params["directory"]
+    full_root_dir: Path = Path(directory)
+
+    if run:
+        if not full_nomad_config_path.exists():
+            raise FileNotFoundError(f"Nomad Config file not found in {full_nomad_config_path}")
+        cred: dict = json.load(full_nomad_config_path.open('b'))
+        username: str = cred["username"]
+        password: str = cred["password"]
+        print(username, password)
+
+    else:
+        logger.info("Not running. Please supply the run flag. ")
 
 
 def log_to_mongodb(mongo_configfile: str, task_records: List[GDriveLog], raw_dir: Path, compress_dir: Path):
