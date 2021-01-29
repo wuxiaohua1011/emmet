@@ -657,7 +657,7 @@ def nomad_upload_data(task_ids: List[str], username: str, password: str, gdrive_
 
     raw = gdrive_mongo_store.query(criteria={"task_id": {"$in": task_ids}})
     records: List[GDriveLog] = [GDriveLog.parse_obj(record) for record in raw]
-    uploads = []
+    uploads:Dict[str: Any] = dict()
     for record in records:
         print(record.path)
         full_file_path = (root_dir / (record.path + ".tar.gz"))
@@ -669,13 +669,13 @@ def nomad_upload_data(task_ids: List[str], username: str, password: str, gdrive_
             record.nomad_upload_id = upload.upload_id
             record.nomad_updated = datetime.now()
             logger.info(f"task [{record.task_id}] has started uploading. upload id: [{record.nomad_upload_id}]")
-            uploads.append(upload)
+            uploads[upload.upload_id] = upload
 
     # wait until all uploads are completed
     while True:
         should_break = True
-        for upload in uploads:
-            upload = client.uploads.get_upload(upload_id=upload.upload_id).response().result
+        for upload_id in uploads.keys():
+            upload = client.uploads.get_upload(upload_id=upload_id).response().result
             if upload.tasks_running:
                 should_break = False
                 logger.info(f"upload [{upload.upload_id}] is still running")
@@ -684,11 +684,12 @@ def nomad_upload_data(task_ids: List[str], username: str, password: str, gdrive_
         if should_break:
             break
 
-    for upload in uploads:
+    for upload_id in uploads.keys():
+        upload = client.uploads.get_upload(upload_id=upload_id).response().result
         if upload.tasks_status != 'SUCCESS':
             print(upload.tasks_status)
             logger.error(f"Something went wrong. Cannot record with upload id [{upload.upload_id}] failed: {upload.errors}")
-            client.uploads.delete_upload(upload_id=upload.upload_id).response().result
+            client.uploads.delete_upload(upload_id=upload_id).response().result
 
     return True
 
