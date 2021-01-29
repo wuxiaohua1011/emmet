@@ -658,30 +658,30 @@ def nomad_upload_data(task_ids: List[str], username: str, password: str, gdrive_
     raw = gdrive_mongo_store.query(criteria={"task_id": {"$in": task_ids}})
     records: List[GDriveLog] = [GDriveLog.parse_obj(record) for record in raw]
     print(records)
-    # uploads = []
-    # for record in records:
-    #     full_file_path = (root_dir / record.path)
-    #     if not full_file_path.exists():
-    #         record.error = f"Record can no longer be found in {root_dir}"
-    #     else:
-    #         upload = nomad_upload_helper(client=client, file=full_file_path.open('rb'))
-    #         record.nomad_upload_id = upload.upload_id
-    #         record.nomad_updated = datetime.now()
-    #         uploads.append(upload)
-    #
-    # # wait until all uploades are completed
-    # while True:
-    #     should_break = True
-    #     for upload in uploads:
-    #         if upload.tasks_running:
-    #             should_break = False
-    #     if should_break:
-    #         break
-    #
-    # for upload in uploads:
-    #     if upload.tasks_status != 'SUCCESS':
-    #         logger.error(f"Something went wrong. Cannot record with upload id [{upload.upload_id}] failed: {upload.errors}")
-    #         client.uploads.delete_upload(upload_id=upload.upload_id).response().result
+    uploads = []
+    for record in records:
+        full_file_path = (root_dir / record.path)
+        if not full_file_path.exists():
+            record.error = f"Record can no longer be found in {root_dir}"
+        else:
+            upload = nomad_upload_helper(client=client, file=full_file_path.open('rb'))
+            record.nomad_upload_id = upload.upload_id
+            record.nomad_updated = datetime.now()
+            uploads.append(upload)
+
+    # wait until all uploades are completed
+    while True:
+        should_break = True
+        for upload in uploads:
+            if upload.tasks_running:
+                should_break = False
+        if should_break:
+            break
+
+    for upload in uploads:
+        if upload.tasks_status != 'SUCCESS':
+            logger.error(f"Something went wrong. Cannot record with upload id [{upload.upload_id}] failed: {upload.errors}")
+            client.uploads.delete_upload(upload_id=upload.upload_id).response().result
 
     return True
 
