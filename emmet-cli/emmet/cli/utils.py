@@ -619,7 +619,7 @@ def nomad_upload_data(task_ids: List[str], username: str, password: str, gdrive_
     client: SwaggerClient = SwaggerClient.from_url('%s/swagger.json' % nomad_url, http_client=http_client)
 
     raw = gdrive_mongo_store.query(criteria={"task_id": {"$in": task_ids}})
-    records: List[GDriveLog] = [GDriveLog.from_orm(record) for record in raw]
+    records: List[GDriveLog] = [GDriveLog.parse_obj(record) for record in raw]
     print(records)
     # uploads = []
     # for record in records:
