@@ -644,7 +644,7 @@ def upload_to_nomad(nomad_configfile, num):
     if run:
         if not full_nomad_config_path.exists():
             raise FileNotFoundError(f"Nomad Config file not found in {full_nomad_config_path}")
-        cred: dict = json.load(full_nomad_config_path.open('b'))
+        cred: dict = json.load(full_nomad_config_path.open('r'))
         username: str = cred["username"]
         password: str = cred["password"]
         print(username, password)
