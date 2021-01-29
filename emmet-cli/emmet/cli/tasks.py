@@ -643,8 +643,8 @@ def upload_latest(mongo_configfile, num_materials):
             logger.info(f"Restoring using command [{' '.join(restore_cmds)}]")
             logger.info("DBUGGING, NOT EXECUTING")
 
-            # move restored content to directory/raw
-            move_dir(src=restore_dir.as_posix(), dst=(full_root_dir / 'raw').as_posix(), pattern="block*")
+            # # move restored content to directory/raw
+            # move_dir(src=restore_dir.as_posix(), dst=(full_root_dir / 'raw').as_posix(), pattern="block*")
 
             # # run compressed cmd
             # compress_cmds = base_cmds + ["compress", "-l", "raw", "-o", "compressed", "--nproc", "4"]
