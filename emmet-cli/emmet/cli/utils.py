@@ -555,7 +555,11 @@ class File(BaseModel):
 def move_dir(src: str, dst: str, pattern: str):
     for file_path in glob(f'{src}/{pattern}'):
         logger.info(f"Moving [{file_path}] to [{dst}]")
-        shutil.move(src=file_path, dst=f"{dst}")
+        try:
+            shutil.move(src=file_path, dst=f"{dst}")
+        except Exception as e:
+            logger.warning(e)
+            logger.info("not moving this directory because it already existed for some reason.")
 
 
 def md5_update_from_file(filename: Union[str, Path], hash: Hash) -> Hash:
