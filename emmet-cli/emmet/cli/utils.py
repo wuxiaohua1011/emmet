@@ -587,10 +587,7 @@ def nomad_find_not_uploaded(gdrive_mongo_store: MongograntStore, username: str, 
         sort={"last_updated": Sort.Ascending},
         limit=num
     )
-    for r in raw:
-        print(r)
-
-    return []
+    return [r["task_id"] for r in raw]
 
 
 def nomad_upload_data(task_ids: List[str], username: str, password: str, gdrive_mongo_store: MongograntStore,
