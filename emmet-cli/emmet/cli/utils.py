@@ -678,6 +678,7 @@ def nomad_upload_data(task_ids: List[str], username: str, password: str, gdrive_
             if upload.tasks_running:
                 should_break = False
                 logger.info(f"upload [{upload.upload_id}] is still running")
+                upload = client.uploads.get_upload(upload_id=upload.upload_id).response().result
                 time.sleep(5)
 
         if should_break:
