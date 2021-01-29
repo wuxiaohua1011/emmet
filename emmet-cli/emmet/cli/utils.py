@@ -33,6 +33,11 @@ from pydantic import BaseModel, Field
 from typing import List, Dict, Set, Any, Optional, Tuple
 from maggma.stores.advanced_stores import MongograntStore
 from maggma.core.store import Sort
+from bravado.requests_client import RequestsClient, Authenticator
+from bravado.client import SwaggerClient
+from keycloak import KeycloakOpenID
+from urllib.parse import urlparse
+import time
 
 logger = logging.getLogger("emmet")
 perms = stat.S_IRUSR | stat.S_IWUSR | stat.S_IRGRP | stat.S_IWGRP
@@ -539,6 +544,7 @@ class GDriveLog(BaseModel):
     md5hash: str = Field(default="", description="md5 hash of the content of the files inside this gzip")
     files: List[Dict[str, Any]] = Field(default=[], description="meta data of the content of the gzip")
     nomad_updated: Optional[datetime] = Field(default=None)
+    nomad_upload_id: Optional[str] = Field(default=None)
 
 class File(BaseModel):
     file_name: str = Field(default="")
@@ -638,3 +644,32 @@ def find_all_launcher_paths_helper(input_dir: Path) -> List[str]:
                 sub_paths = find_all_launcher_paths_helper(Path(root) / name)
                 paths.extend(sub_paths)
     return paths
+
+
+# an authenticator for NOMAD's keycloak user management
+class KeycloakAuthenticator(Authenticator):
+    def __init__(self, user, password, nomad_url):
+        super().__init__(host=urlparse(nomad_url).netloc)
+        self.user = user
+        self.password = password
+        self.token = None
+        self.__oidc = KeycloakOpenID(
+            server_url='https://nomad-lab.eu/fairdi/keycloak/auth/',
+            realm_name='fairdi_nomad_prod',
+            client_id='nomad_public')
+
+    def apply(self, request):
+        if self.token is None:
+            self.token = self.__oidc.token(username=self.user, password=self.password)
+            self.token['time'] = time.time()
+        elif self.token['expires_in'] < int(time.time()) - self.token['time'] + 10:
+            try:
+                self.token = self.__oidc.refresh_token(self.token['refresh_token'])
+                self.token['time'] = time.time()
+            except Exception:
+                self.token = self.__oidc.token(username=self.user, password=self.password)
+                self.token['time'] = time.time()
+
+        request.headers.setdefault('Authorization', 'Bearer %s' % self.token['access_token'])
+
+        return request
