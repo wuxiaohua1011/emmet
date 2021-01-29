@@ -723,6 +723,7 @@ def upload_to_nomad(nomad_configfile, num, mongo_configfile):
                                          mgclient_config_path=configfile.as_posix())
 
     if run:
+        gdrive_mongo_store.connect()
         if not full_nomad_config_path.exists():
             raise FileNotFoundError(f"Nomad Config file not found in {full_nomad_config_path}")
         cred: dict = json.load(full_nomad_config_path.open('r'))
@@ -737,8 +738,10 @@ def upload_to_nomad(nomad_configfile, num, mongo_configfile):
                                                username=username, password=password,
                                                gdrive_mongo_store=gdrive_mongo_store, root_dir=full_root_dir)
 
+        gdrive_mongo_store.close()
     else:
         logger.info("Not running. Please supply the run flag. ")
+
     return ReturnCodes.SUCCESS
 
 
