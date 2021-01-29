@@ -623,7 +623,7 @@ def nomad_upload_data(task_ids: List[str], username: str, password: str, gdrive_
     uploads = []
     for record in records:
         print(record.path)
-        full_file_path = (root_dir / record.path)
+        full_file_path = (root_dir / (record.path + ".tar.gz"))
         if not full_file_path.exists():
             record.error = f"Record can no longer be found in {full_file_path}"
             logger.info(f"File not found: Record can no longer be found in {full_file_path}")
