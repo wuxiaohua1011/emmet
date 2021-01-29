@@ -649,6 +649,7 @@ def nomad_upload_data(task_ids: List[str], username: str, password: str, gdrive_
 
     for upload in uploads:
         if upload.tasks_status != 'SUCCESS':
+            print(upload.tasks_status)
             logger.error(f"Something went wrong. Cannot record with upload id [{upload.upload_id}] failed: {upload.errors}")
             client.uploads.delete_upload(upload_id=upload.upload_id).response().result
 
