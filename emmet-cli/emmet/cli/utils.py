@@ -584,6 +584,7 @@ class GDriveLog(BaseModel):
     files: List[Dict[str, Any]] = Field(default=[], description="meta data of the content of the gzip")
     nomad_updated: Optional[datetime] = Field(default=None)
     nomad_upload_id: Optional[str] = Field(default=None)
+    error: Optional[str] = Field(default=None)
 
 
 class File(BaseModel):
@@ -602,8 +603,14 @@ def move_dir(src: str, dst: str, pattern: str):
             logger.info("not moving this directory because it already existed for some reason.")
 
 
-def nomad_find_not_uploaded(gdrive_store:MongograntStore, username:str, password:str, num: int) -> List[str]:
+def nomad_find_not_uploaded(gdrive_mongo_store: MongograntStore, username: str, password: str, num: int) -> List[str]:
+    return []
+
+
+def nomad_upload_data(task_ids: List[str], username: str, password: str, gdrive_mongo_store: MongograntStore,
+                      root_dir: Path):
     pass
+
 
 def md5_update_from_file(filename: Union[str, Path], hash: Hash) -> Hash:
     assert Path(filename).is_file()
@@ -720,3 +727,96 @@ class KeycloakAuthenticator(Authenticator):
         request.headers.setdefault('Authorization', 'Bearer %s' % self.token['access_token'])
 
         return request
+
+
+def find_unuploaded_launcher_paths(outputfile, configfile, num) -> List[GDriveLog]:
+    """
+    Find launcher paths that has not been uploaded
+    Prioritize for blessed tasks and recent materials
+
+    :param outputfile: outputfile to write the launcher paths to
+    :param configfile: config file for mongodb
+    :param num: maximum number of materials to consider in this run
+    :return:
+        Success
+    """
+    outputfile: Path = Path(outputfile)
+    configfile: Path = Path(configfile)
+    if configfile.exists() is False:
+        raise FileNotFoundError(f"Config file [{configfile}] is not found")
+
+    # connect to mongo necessary mongo stores
+    gdrive_mongo_store = MongograntStore(mongogrant_spec="rw:knowhere.lbl.gov/mp_core_mwu",
+                                         collection_name="gdrive",
+                                         mgclient_config_path=configfile.as_posix())
+    material_mongo_store = MongograntStore(mongogrant_spec="ro:mongodb04.nersc.gov/mp_emmet_prod",
+                                           collection_name="materials_2020_09_08",
+                                           mgclient_config_path=configfile.as_posix())
+    tasks_mongo_store = MongograntStore(mongogrant_spec="ro:mongodb04.nersc.gov/mp_emmet_prod",
+                                        collection_name="tasks",
+                                        mgclient_config_path=configfile.as_posix())
+    gdrive_mongo_store.connect()
+    material_mongo_store.connect()
+    tasks_mongo_store.connect()
+    logger.info("gdrive, material, and tasks mongo store successfully connected")
+
+    # find un-uploaded materials task ids
+    task_ids: List[str] = find_un_uploaded_materials_task_id(gdrive_mongo_store, material_mongo_store, max_num=num)
+    logger.info(f"Found [{len(task_ids)}] task_ids for [{num}] materials")
+    logger.info(f"Task_ids = {task_ids}")
+    if outputfile.exists():
+        logger.info(f"Will be over writing {outputfile}")
+    else:
+        logger.info(f"[{outputfile}] does not exist, creating...")
+        outputfile.parent.mkdir(exist_ok=True, parents=True)
+    # find launcher paths
+    task_records = list(tasks_mongo_store.query(criteria={"task_id": {"$in": task_ids}},
+                                                properties={"task_id": 1, "dir_name": 1}))
+    gdrive_logs: List[GDriveLog] = []
+    logger.info(f"Writing [{len(task_records)}] launcher paths to [{outputfile.as_posix()}]")
+    output_file_stream = outputfile.open('w')
+    for task in task_records:
+        dir_name: str = task["dir_name"]
+        start = dir_name.find("block_")
+        dir_name = dir_name[start:]
+        gdrive_logs.append(GDriveLog(path=dir_name, task_id=task["task_id"]))
+        line = dir_name + "\n"
+        output_file_stream.write(line)
+
+    # epilogue
+    output_file_stream.close()
+    gdrive_mongo_store.close()
+    material_mongo_store.close()
+    tasks_mongo_store.close()
+    return gdrive_logs
+
+
+def log_to_mongodb(mongo_configfile: str, task_records: List[GDriveLog], raw_dir: Path, compress_dir: Path):
+    """
+    # find the reference launcher of the launcher.tar.gz
+    # sort filename by alphabetically, loop through every file, keep a "global" md5
+        # on every file, compute size, & md5hash of content of the file
+        # update global md5hash
+    # get the "global" md5
+    # find total filesize of the launcher.tar.gz
+
+    :param compress_dir:
+    :param raw_dir:
+    :param mongo_configfile:
+    :param task_records:
+    :return:
+    """
+    configfile: Path = Path(mongo_configfile)
+    gdrive_mongo_store = MongograntStore(mongogrant_spec="rw:knowhere.lbl.gov/mp_core_mwu",
+                                         collection_name="gdrive",
+                                         mgclient_config_path=configfile.as_posix())
+    gdrive_mongo_store.connect()
+    for record in task_records:
+        try:
+            fill_record_data(record, raw_dir, compress_dir)
+        except Exception as e:
+            logger.error(f"Something weird happened: {e}.")
+            record.error = e.__str__()
+
+    gdrive_mongo_store.update(docs=[record.dict() for record in task_records], key="path")
+    logger.info(f"[{gdrive_mongo_store.collection_name}] Collection Updated")
