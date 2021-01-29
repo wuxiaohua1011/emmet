@@ -481,27 +481,27 @@ def find_un_uploaded_materials_task_id(gdrive_mongo_store: MongograntStore,
     material_ids, task_ids = find_materials_task_id_helper(material_mongo_store=material_mongo_store, max_num=max_num,
                                                            exclude_list=[])
 
-    result: Set[str] = set(task_ids)
+    result_gdrive_task_ids: Set[str] = set(task_ids)
     # remove any of them that are already in the gdrive store
-    gdrive_mp_ids = set(
-        [entry["task_id"] for entry in gdrive_mongo_store.query(criteria={"task_id": {"$in": list(result)}},
+    gdrive_task_id = set(
+        [entry["task_id"] for entry in gdrive_mongo_store.query(criteria={"task_id": {"$in": list(result_gdrive_task_ids)}},
                                                                 properties={"task_id": 1})])
-    result = result - gdrive_mp_ids
+    result_gdrive_task_ids = result_gdrive_task_ids - gdrive_task_id
     retry = 0  # if there are really no more materials to add, just exit
-    while len(result) < max_num and retry < 5:
+    while len(result_gdrive_task_ids) < max_num and retry < 5:
         # fetch again from materials mongo store if there are more space
         material_ids, task_ids = find_materials_task_id_helper(material_mongo_store=material_mongo_store,
                                                                max_num=max_num, exclude_list=list(material_ids))
         print(material_ids, task_ids)
         # remove any of them that are not in gdrive store
-        result = set(task_ids)
+        result_gdrive_task_ids = set(task_ids)
         # remove any of them that are already in the gdrive store
-        gdrive_mp_ids = set(
-            [entry["task_id"] for entry in gdrive_mongo_store.query(criteria={"task_id": {"$in": list(result)}},
+        gdrive_task_id = set(
+            [entry["task_id"] for entry in gdrive_mongo_store.query(criteria={"task_id": {"$in": list(result_gdrive_task_ids)}},
                                                                     properties={"task_id": 1})])
-        result = result - gdrive_mp_ids
+        result_gdrive_task_ids = result_gdrive_task_ids - gdrive_task_id
         retry += 1
-    return list(result)
+    return list(result_gdrive_task_ids)
 
 
 def find_materials_task_id_helper(material_mongo_store, max_num, exclude_list=None) -> Tuple[List[str], List[str]]:
@@ -528,7 +528,7 @@ def find_materials_task_id_helper(material_mongo_store, max_num, exclude_list=No
             blessed_tasks: dict = material["blessed_tasks"]
             task_ids.extend(list(blessed_tasks.values()))
             material_ids.add(material["task_id"])
-    return list(material_ids), task_ids
+    return list(material_ids.union(exclude_list)), task_ids
 
 
 class GDriveLog(BaseModel):
