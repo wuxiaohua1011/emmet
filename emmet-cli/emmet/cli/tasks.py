@@ -636,6 +636,7 @@ def upload_latest(mongo_configfile, num_materials):
 @click.option(
     "-n",
     "--num",
+    required=False,
     default=1000,
     type=click.IntRange(min=0, max=1000),
     help="maximum number of materials to upload"
