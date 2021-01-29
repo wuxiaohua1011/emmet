@@ -630,6 +630,7 @@ def nomad_upload_data(task_ids: List[str], username: str, password: str, gdrive_
             upload = nomad_upload_helper(client=client, file=full_file_path.open('rb'))
             record.nomad_upload_id = upload.upload_id
             record.nomad_updated = datetime.now()
+            logger.info(f"task [{record.task_id}]has started uploading. upload id: [{record.nomad_upload_id}]")
             uploads.append(upload)
 
     # wait until all uploades are completed
@@ -638,6 +639,8 @@ def nomad_upload_data(task_ids: List[str], username: str, password: str, gdrive_
         for upload in uploads:
             if upload.tasks_running:
                 should_break = False
+                logger.info(f"upload [{upload.upload_id}] is still running")
+
         if should_break:
             break
 
