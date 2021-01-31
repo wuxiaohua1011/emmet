@@ -587,22 +587,22 @@ def upload_latest(mongo_configfile, num_materials):
             logger.info(f"Restoring using command [{' '.join(restore_cmds)}]")
             # logger.info("DBUGGING, NOT EXECUTING")
 
-            # move restored content to directory/raw
-            move_dir(src=restore_dir.as_posix(), dst=(full_root_dir / 'raw').as_posix(), pattern="block*")
-
-            # run compressed cmd
-            compress_cmds = base_cmds + ["compress", "-l", "raw", "-o", "compressed", "--nproc", "4"]
-            logger.info(f"Compressing using command [{' '.join(compress_cmds)}]".strip())
-            run_and_log_info(args=compress_cmds)
-
-            # run upload cmd
-            upload_cmds = base_cmds + ["upload", "--input-dir", "compressed"]
-            logger.info(f"Uploading using command [{' '.join(upload_cmds)}]")
-            run_and_log_info(args=upload_cmds)
-
-            # log to mongodb
-            log_to_mongodb(mongo_configfile=mongo_configfile, task_records=task_records,
-                           raw_dir=full_root_dir / 'raw', compress_dir=full_root_dir / "compressed")
+            # # move restored content to directory/raw
+            # move_dir(src=restore_dir.as_posix(), dst=(full_root_dir / 'raw').as_posix(), pattern="block*")
+            #
+            # # run compressed cmd
+            # compress_cmds = base_cmds + ["compress", "-l", "raw", "-o", "compressed", "--nproc", "4"]
+            # logger.info(f"Compressing using command [{' '.join(compress_cmds)}]".strip())
+            # run_and_log_info(args=compress_cmds)
+            #
+            # # run upload cmd
+            # upload_cmds = base_cmds + ["upload", "--input-dir", "compressed"]
+            # logger.info(f"Uploading using command [{' '.join(upload_cmds)}]")
+            # run_and_log_info(args=upload_cmds)
+            #
+            # # log to mongodb
+            # log_to_mongodb(mongo_configfile=mongo_configfile, task_records=task_records,
+            #                raw_dir=full_root_dir / 'raw', compress_dir=full_root_dir / "compressed")
 
             # # move uploaded & compressed content to tmp long term storage
             # mv_cmds = ["rclone", "move",
