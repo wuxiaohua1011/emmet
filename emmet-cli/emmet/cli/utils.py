@@ -560,7 +560,7 @@ def move_dir(src: str, dst: str, pattern: str):
     for file_path in glob(f'{src}/{pattern}'):
         logger.info(f"Moving [{file_path}] to [{dst}]")
         try:
-            shutil.move(src=file_path, dst=f"{dst}")
+            shutil.copy(src=file_path, dst=f"{dst}")
         except Exception as e:
             logger.warning(e)
             logger.info("not moving this directory because it already existed for some reason.")
