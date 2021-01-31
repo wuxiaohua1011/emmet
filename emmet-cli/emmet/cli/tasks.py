@@ -579,9 +579,9 @@ def upload_latest(mongo_configfile, num_materials):
                                                                            configfile=full_mongo_config_path.as_posix(),
                                                                            num=num_materials)
             # restore
-            # restore_dir = (full_root_dir / "restore")
-            # if restore_dir.exists() is False:
-            #     restore_dir.mkdir(parents=True, exist_ok=True)
+            restore_dir = (full_root_dir / "restore")
+            if restore_dir.exists() is False:
+                restore_dir.mkdir(parents=True, exist_ok=True)
             # restore_cmds = base_cmds[:-1] + [restore_dir.as_posix()] + ["restore", "--inputfile", full_emmet_input_file_path.as_posix()]
             # run_and_log_info(args=restore_cmds)
             # logger.info(f"Restoring using command [{' '.join(restore_cmds)}]")
