@@ -652,14 +652,14 @@ def upload_latest(mongo_configfile, num_materials):
             logger.info(f"Compressing using command [{' '.join(compress_cmds)}]".strip())
             run_and_log_info(args=compress_cmds)
 
-            # run upload cmd
-            # upload_cmds = base_cmds + ["upload", "--input-dir", "compressed"]
-            # logger.info(f"Uploading using command [{' '.join(upload_cmds)}]")
-            # run_and_log_info(args=upload_cmds)
-            #
-            # # log to mongodb
-            # log_to_mongodb(mongo_configfile=mongo_configfile, task_records=task_records,
-            #                raw_dir=full_root_dir / 'raw', compress_dir=full_root_dir / "compressed")
+            #run upload cmd
+            upload_cmds = base_cmds + ["upload", "--input-dir", "compressed"]
+            logger.info(f"Uploading using command [{' '.join(upload_cmds)}]")
+            run_and_log_info(args=upload_cmds)
+
+            # log to mongodb
+            log_to_mongodb(mongo_configfile=mongo_configfile, task_records=task_records,
+                           raw_dir=full_root_dir / 'raw', compress_dir=full_root_dir / "compressed")
             #
             # # move uploaded & compressed content to tmp long term storage
             # mv_cmds = ["rclone", "move",
