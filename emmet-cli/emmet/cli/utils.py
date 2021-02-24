@@ -620,7 +620,7 @@ def nomad_find_not_uploaded(gdrive_mongo_store: MongograntStore, username: str, 
     """
     raw = gdrive_mongo_store.query(
         criteria={"$and": [{"nomad_updated": None}, {"error": None}]},
-        properties={"task_id": 1, "file_size":1},
+        properties={"task_id": 1, "file_size": 1},
         sort={"last_updated": Sort.Ascending},
         limit=num
     )
@@ -657,6 +657,10 @@ def nomad_upload_data(task_ids: List[str], username: str, password: str, gdrive_
 
     raw = gdrive_mongo_store.query(criteria={"task_id": {"$in": task_ids}})
     records: List[GDriveLog] = [GDriveLog.parse_obj(record) for record in raw]
+    # loop over records, pack into zip & generate json
+
+    # upload zip
+
     uploads: Dict[str: Any] = dict()
     for record in records:
         full_file_path = (root_dir / (record.path + ".tar.gz"))
@@ -687,19 +691,18 @@ def nomad_upload_data(task_ids: List[str], username: str, password: str, gdrive_
         upload = client.uploads.get_upload(upload_id=upload_id).response().result
         if upload.tasks_status != 'SUCCESS':
             print(upload.tasks_status)
-            logger.error(f"Something went wrong. Cannot record with upload id [{upload.upload_id}] failed: {upload.errors}")
+            logger.error(
+                f"Something went wrong. Cannot record with upload id [{upload.upload_id}] failed: {upload.errors}")
             client.uploads.delete_upload(upload_id=upload_id).response().result
     gdrive_mongo_store.update(docs=[record.dict() for record in records], key="task_id")
     return True
 
 
-
-
-
-
 def nomad_upload_helper(client, file):
     upload = client.uploads.upload(file=file, publish_directly=True).response().result
     return upload
+
+
 def md5_update_from_file(filename: Union[str, Path], hash: Hash) -> Hash:
     assert Path(filename).is_file()
     with open(str(filename), "rb") as f:
@@ -849,8 +852,7 @@ def find_unuploaded_launcher_paths(outputfile, configfile, num) -> List[GDriveLo
     logger.info("gdrive, material, and tasks mongo store successfully connected")
 
     # find un-uploaded materials task ids
-    #task_ids: List[str] = find_un_uploaded_materials_task_id(gdrive_mongo_store, material_mongo_store, max_num=num)
-    task_ids = ["mp-1344288"]
+    task_ids: List[str] = find_un_uploaded_materials_task_id(gdrive_mongo_store, material_mongo_store, max_num=num)
     logger.info(f"Found [{len(task_ids)}] task_ids for [{num}] materials")
     logger.info(f"Task_ids = {task_ids}")
     if outputfile.exists():
