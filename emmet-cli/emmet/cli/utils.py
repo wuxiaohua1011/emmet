@@ -687,7 +687,7 @@ def nomad_upload_data(task_ids: List[str], username: str, password: str, gdrive_
     logger.info("NOMAD json created")
 
     # create zip file
-    zip_file_name = f"nomad_{datetime.now().strftime('%m/%d/%Y')}.zip"
+    zip_file_name = f"nomad_{datetime.now().strftime('%m_%d_%Y')}.zip"
     with ZipFile(zip_file_name, 'w') as my_zip:
         for file_path in files_paths:
             my_zip.write(file_path)
