@@ -679,8 +679,8 @@ def nomad_upload_data(task_ids: List[str], username: str, password: str, gdrive_
     # write json data to file
     file_name = f"nomad_{datetime.now()}.json"
     json_file_path = root_dir / file_name
-    json_file = json_file_path.open('w')
-    json.dump(nomad_json, json_file, indent=4)
+    with open(json_file_path.as_posix(), 'w') as outfile:
+        json.dump(nomad_json, outfile, indent=4)
     logger.info("NOMAD json created")
 
     # # upload zip
