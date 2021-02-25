@@ -638,6 +638,7 @@ def upload_latest(mongo_configfile, num_materials):
             restore_dir = (full_root_dir / "restore")
             if restore_dir.exists() is False:
                 restore_dir.mkdir(parents=True, exist_ok=True)
+            base_cmds.extend(["-m", f"{len(task_records)}"])  # restore len(task_records) records
             restore_cmds = base_cmds[:-1] + [restore_dir.as_posix()] + ["restore", "--inputfile", full_emmet_input_file_path.as_posix()]
             run_and_log_info(args=restore_cmds)
             logger.info(f"Restoring using command [{' '.join(restore_cmds)}]")
@@ -651,7 +652,7 @@ def upload_latest(mongo_configfile, num_materials):
             logger.info(f"Compressing using command [{' '.join(compress_cmds)}]".strip())
             run_and_log_info(args=compress_cmds)
 
-            #run upload cmd
+            # run upload cmd
             upload_cmds = base_cmds + ["upload", "--input-dir", "compressed"]
             logger.info(f"Uploading using command [{' '.join(upload_cmds)}]")
             run_and_log_info(args=upload_cmds)
