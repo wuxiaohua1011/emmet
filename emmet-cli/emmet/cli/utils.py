@@ -29,6 +29,7 @@ from typing import Union
 from pathlib import Path
 from typing import List, Dict
 import tarfile
+import json
 import subprocess, shlex
 from pydantic import BaseModel, Field
 from typing import List, Dict, Set, Any, Optional, Tuple
@@ -657,44 +658,67 @@ def nomad_upload_data(task_ids: List[str], username: str, password: str, gdrive_
 
     raw = gdrive_mongo_store.query(criteria={"task_id": {"$in": task_ids}})
     records: List[GDriveLog] = [GDriveLog.parse_obj(record) for record in raw]
-    # loop over records, pack into zip & generate json
 
-    # upload zip
-
-    uploads: Dict[str: Any] = dict()
+    # loop over records, generate json & pack into zip &
+    nomad_json: dict = {"comment": f"Materials Project Upload at {datetime.now()}",
+                        "external_db": "Materials Project",
+                        "entries": dict()}
+    # populate json
     for record in records:
+        full_path_without_suffix: Path = root_dir / record.path
         full_file_path = (root_dir / (record.path + ".tar.gz"))
         if not full_file_path.exists():
             record.error = f"Record can no longer be found in {full_file_path}"
             logger.info(f"File not found: Record can no longer be found in {full_file_path}")
         else:
-            upload = nomad_upload_helper(client=client, file=full_file_path.open('rb'))
-            record.nomad_upload_id = upload.upload_id
-            record.nomad_updated = datetime.now()
-            logger.info(f"task [{record.task_id}] has started uploading. upload id: [{record.nomad_upload_id}]")
-            uploads[upload.upload_id] = upload
+            nomad_name = full_path_without_suffix / "vasprun.xml.gz"
+            external_id = record.task_id
+            references = [f"https://materialsproject.org/tasks/{external_id}"]
+            entries: dict = nomad_json.get("entries")
+            entries[nomad_name] = {"external_id": external_id, "references": references}
+    # write json data to file
+    file_name = f"nomad_{datetime.now()}.json"
+    json_file_path = root_dir / file_name
+    json_file = json_file_path.open('w')
+    json.dump(nomad_json, json_file, indent=4)
+    logger.info("NOMAD json created")
 
-    # wait until all uploads are completed
-    while True:
-        should_break = True
-        for upload_id in uploads.keys():
-            upload = client.uploads.get_upload(upload_id=upload_id).response().result
-            if upload.tasks_running:
-                should_break = False
-                logger.info(f"upload [{upload.upload_id}] is still running")
-                time.sleep(5)
-
-        if should_break:
-            break
-
-    for upload_id in uploads.keys():
-        upload = client.uploads.get_upload(upload_id=upload_id).response().result
-        if upload.tasks_status != 'SUCCESS':
-            print(upload.tasks_status)
-            logger.error(
-                f"Something went wrong. Cannot record with upload id [{upload.upload_id}] failed: {upload.errors}")
-            client.uploads.delete_upload(upload_id=upload_id).response().result
-    gdrive_mongo_store.update(docs=[record.dict() for record in records], key="task_id")
+    # # upload zip
+    #
+    # uploads: Dict[str: Any] = dict()
+    # for record in records:
+    #     full_file_path = (root_dir / (record.path + ".tar.gz"))
+    #     if not full_file_path.exists():
+    #         record.error = f"Record can no longer be found in {full_file_path}"
+    #         logger.info(f"File not found: Record can no longer be found in {full_file_path}")
+    #     else:
+    #         upload = nomad_upload_helper(client=client, file=full_file_path.open('rb'))
+    #         record.nomad_upload_id = upload.upload_id
+    #         record.nomad_updated = datetime.now()
+    #         logger.info(f"task [{record.task_id}] has started uploading. upload id: [{record.nomad_upload_id}]")
+    #         uploads[upload.upload_id] = upload
+    #
+    # # wait until all uploads are completed
+    # while True:
+    #     should_break = True
+    #     for upload_id in uploads.keys():
+    #         upload = client.uploads.get_upload(upload_id=upload_id).response().result
+    #         if upload.tasks_running:
+    #             should_break = False
+    #             logger.info(f"upload [{upload.upload_id}] is still running")
+    #             time.sleep(5)
+    #
+    #     if should_break:
+    #         break
+    #
+    # for upload_id in uploads.keys():
+    #     upload = client.uploads.get_upload(upload_id=upload_id).response().result
+    #     if upload.tasks_status != 'SUCCESS':
+    #         print(upload.tasks_status)
+    #         logger.error(
+    #             f"Something went wrong. Cannot record with upload id [{upload.upload_id}] failed: {upload.errors}")
+    #         client.uploads.delete_upload(upload_id=upload_id).response().result
+    # gdrive_mongo_store.update(docs=[record.dict() for record in records], key="task_id")
     return True
 
 
