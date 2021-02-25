@@ -634,7 +634,7 @@ def nomad_upload_data(task_ids: List[str], username: str, password: str, gdrive_
             record.error = f"Record can no longer be found in {full_file_path}"
             logger.info(f"File not found: Record can no longer be found in {full_file_path}")
         else:
-            nomad_name = full_path_without_suffix / "vasprun.xml.gz"
+            nomad_name = (full_path_without_suffix / "vasprun.xml.gz").as_posix()
             external_id = record.task_id
             references = [f"https://materialsproject.org/tasks/{external_id}"]
             entries: dict = nomad_json.get("entries")
