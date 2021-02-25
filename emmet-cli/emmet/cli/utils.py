@@ -641,7 +641,6 @@ def nomad_upload_data(task_ids: List[str], username: str, password: str, gdrive_
             vasp_run_names = [name for name in file_names if "vasprun" in name]
             vasp_run_name = Path(vasp_run_names[0]).name
             nomad_name = (full_path_without_suffix / vasp_run_name).as_posix()
-            print(nomad_name)
             external_id = record.task_id
             references = [f"https://materialsproject.org/tasks/{external_id}"]
             entries: dict = nomad_json.get("entries")
@@ -652,16 +651,16 @@ def nomad_upload_data(task_ids: List[str], username: str, password: str, gdrive_
     json_file_path = root_dir / json_file_name
     with open(json_file_path.as_posix(), 'w') as outfile:
         json.dump(nomad_json, outfile, indent=4)
-    logger.info("NOMAD JSON created")
+    logger.info("NOMAD JSON prepared")
 
     # create zip file
-    zip_file_name = f"nomad_{datetime.now().strftime('%m_%d_%Y')}.zip"
+    zip_file_name = f"nomad_{datetime.now().strftime('%m_%d_%Y_%H_%M_%S')}.zip"
     zip_file_path = root_dir / zip_file_name
     with ZipFile(zip_file_path.as_posix(), 'w') as my_zip:
         for file_path in files_paths:
             my_zip.write(file_path)
         my_zip.write(json_file_path.as_posix())
-    logger.info("NOMAD Zip Prepared")
+    logger.info("NOMAD ZIP prepared")
 
     # upload the zipped file
     with open(zip_file_path.as_posix(), 'rb') as f:
@@ -675,7 +674,7 @@ def nomad_upload_data(task_ids: List[str], username: str, password: str, gdrive_
     while upload.tasks_running:
         upload = client.uploads.get_upload(upload_id=upload.upload_id).response().result
         time.sleep(5)
-        logger.info("Still Uploading...")
+        logger.info("Still Uploading... " + 'processed: %d, failures: %d' % (upload.processed_calcs, upload.failed_calcs))
 
     # check if upload succeeded and update our database
     upload = client.uploads.get_upload(upload_id=upload.upload_id).response().result
@@ -687,11 +686,12 @@ def nomad_upload_data(task_ids: List[str], username: str, password: str, gdrive_
         logger.info("Upload succeeded, database updated")
     # upload zip
 
-    # clean up (remove json, remove zip)
+    # clean up (remove json, remove zip, remove uploaded launchers)
     # if os.path.exists(json_file_path.as_posix()):
     #     os.remove(json_file_path.as_posix())
     # if os.path.exists(zip_file_path.as_posix()):
     #     os.remove(zip_file_path.as_posix())
+
 
 
     return True
