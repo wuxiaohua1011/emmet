@@ -673,6 +673,8 @@ def nomad_upload_data(task_ids: List[str], username: str, password: str, gdrive_
             record.error = f"Record can no longer be found in {full_file_path}"
             logger.info(f"File not found: Record can no longer be found in {full_file_path}")
         else:
+            my_zip = ZipFile(full_file_path.as_posix())
+            print(my_zip.infolist())
             nomad_name = (full_path_without_suffix / "vasprun.xml.gz").as_posix()
             external_id = record.task_id
             references = [f"https://materialsproject.org/tasks/{external_id}"]
@@ -684,7 +686,7 @@ def nomad_upload_data(task_ids: List[str], username: str, password: str, gdrive_
     json_file_path = root_dir / json_file_name
     with open(json_file_path.as_posix(), 'w') as outfile:
         json.dump(nomad_json, outfile, indent=4)
-    logger.info("NOMAD json created")
+    logger.info("NOMAD JSON created")
 
     # create zip file
     zip_file_name = f"nomad_{datetime.now().strftime('%m_%d_%Y')}.zip"
