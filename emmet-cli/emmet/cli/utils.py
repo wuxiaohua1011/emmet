@@ -666,6 +666,10 @@ def nomad_upload_data(task_ids: List[str], username: str, password: str, gdrive_
     for file_path in files_paths:
         shutil.unpack_archive(file_path, extract_dir=upload_preparation_dir)
 
+    zipf = ZipFile('Python.zip', 'w')
+    zipdir(upload_preparation_dir.as_posix(), zipf)
+    zipf.close()
+
     # # upload the zipped file
     # with open(zip_file_path.as_posix(), 'rb') as f:
     #     upload = client.uploads.upload(file=f, publish_directly=True).response().result
