@@ -701,19 +701,18 @@ def nomad_upload_data(task_ids: List[str], username: str, password: str, gdrive_
     logger.info("NOMAD Zip Prepared")
 
     # upload the zipped file
-    upload = nomad_upload_helper(client=client, file=zip_file_path.open('rb'))
-    for record in records:
-        record.nomad_upload_id = upload.upload_id
-        record.nomad_updated = datetime.now()
+    with open(zip_file_path.as_posix(), 'rb') as f:
+        upload = client.uploads.upload(file=f, publish_directly=True).response().result
+        for record in records:
+            record.nomad_upload_id = upload.upload_id
+            record.nomad_updated = datetime.now()
 
+    logger.info("Upload to NOMAD started")
     # wait until upload finish
-    while True:
+    while upload.tasks_running:
         upload = client.uploads.get_upload(upload_id=upload.upload_id).response().result
-        if upload.task_running:
-            logger.info(f"Upload [{upload.upload_id}] is still running")
-            time.sleep(5)
-        else:
-            break
+        time.sleep(5)
+        logger.info('processed: %d, failures: %d' % (upload.processed_calcs, upload.failed_calcs))
 
     # check if upload succeeded and update our database
     upload = client.uploads.get_upload(upload_id=upload.upload_id).response().result
