@@ -682,7 +682,7 @@ def nomad_upload_data(task_ids: List[str], username: str, password: str, gdrive_
             references = [f"https://materialsproject.org/tasks/{external_id}"]
             entries: dict = nomad_json.get("entries")
             entries[nomad_name] = {"external_id": external_id, "references": references}
-            files_paths.append((full_file_path.as_posix(), record.path))
+            files_paths.append((full_file_path.as_posix(), record.path + ".zip"))
     # write json data to file
     # json_file_name = f"nomad_{datetime.now().strftime('%m_%d_%Y_%H_%M_%S')}.json"
     json_file_name = f"nomad_{datetime.now().strftime('%m_%d_%Y')}.json"
@@ -698,7 +698,7 @@ def nomad_upload_data(task_ids: List[str], username: str, password: str, gdrive_
     with ZipFile(zip_file_path.as_posix(), 'w') as my_zip:
         for file_path, arcname in files_paths:
             my_zip.write(file_path, arcname=arcname)
-        my_zip.write(json_file_path.as_posix())
+        my_zip.write(json_file_path.as_posix(), arcname="nomad.json")
     logger.info("NOMAD ZIP prepared")
 
     # upload the zipped file
