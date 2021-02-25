@@ -675,6 +675,7 @@ def nomad_upload_data(task_ids: List[str], username: str, password: str, gdrive_
         upload = client.uploads.get_upload(upload_id=upload.upload_id).response().result
         time.sleep(5)
         logger.info("Still Uploading... " + 'processed: %d, failures: %d' % (upload.processed_calcs, upload.failed_calcs))
+    logger.info("Done! " + 'processed: %d, failures: %d' % (upload.processed_calcs, upload.failed_calcs))
 
     # check if upload succeeded and update our database
     upload = client.uploads.get_upload(upload_id=upload.upload_id).response().result
