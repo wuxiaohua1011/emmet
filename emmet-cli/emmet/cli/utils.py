@@ -622,7 +622,7 @@ def nomad_upload_data(task_ids: List[str], username: str, password: str, gdrive_
 
     raw = gdrive_mongo_store.query(criteria={"task_id": {"$in": task_ids}})
     records: List[GDriveLog] = [GDriveLog.parse_obj(record) for record in raw]
-
+    logger.info(f"Uploading the following tasks to NOMAD: \n{task_ids}")
     # loop over records, generate json & pack into zip &
     nomad_json: dict = {"comment": f"Materials Project Upload at {datetime.now()}",
                         "external_db": "Materials Project",
