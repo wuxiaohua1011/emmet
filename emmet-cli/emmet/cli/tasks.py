@@ -733,7 +733,7 @@ def upload_to_nomad(nomad_configfile, num, mongo_configfile):
         task_ids_not_uploaded: List[str] = nomad_find_not_uploaded(username=username, password=password, num=num,
                                                                    gdrive_mongo_store=gdrive_mongo_store)
         # upload those n tasks
-        status: List[bool] = nomad_upload_data(task_ids=task_ids_not_uploaded,
+        status: List[bool] = nomad_upload_data(task_ids=["mp-1043480"],
                                                username=username, password=password,
                                                gdrive_mongo_store=gdrive_mongo_store,
                                                root_dir=full_root_dir / "tmp_storage")
