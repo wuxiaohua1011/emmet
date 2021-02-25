@@ -674,8 +674,11 @@ def nomad_upload_data(task_ids: List[str], username: str, password: str, gdrive_
             logger.info(f"File not found: Record can no longer be found in {full_file_path}")
         else:
             my_tar = tarfile.open(full_file_path.as_posix(), "r")
-            print(full_file_path, my_tar.getnames())
-            nomad_name = (full_path_without_suffix / "vasprun.xml.gz").as_posix()
+            file_names =  my_tar.getnames()
+            vasp_run_names = [name for name in file_names if "vasprun" in name]
+            vasp_run_name = Path(vasp_run_names[0]).name
+            nomad_name = (full_path_without_suffix / vasp_run_name).as_posix()
+            print(nomad_name)
             external_id = record.task_id
             references = [f"https://materialsproject.org/tasks/{external_id}"]
             entries: dict = nomad_json.get("entries")
