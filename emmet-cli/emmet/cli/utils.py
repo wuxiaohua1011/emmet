@@ -40,6 +40,7 @@ from bravado.client import SwaggerClient
 from keycloak import KeycloakOpenID
 from urllib.parse import urlparse
 import time
+from zipfile import ZipFile
 
 logger = logging.getLogger("emmet")
 perms = stat.S_IRUSR | stat.S_IWUSR | stat.S_IRGRP | stat.S_IWGRP
@@ -664,6 +665,7 @@ def nomad_upload_data(task_ids: List[str], username: str, password: str, gdrive_
                         "external_db": "Materials Project",
                         "entries": dict()}
     # populate json
+    files_paths:List[str] = []
     for record in records:
         full_path_without_suffix: Path = root_dir / record.path
         full_file_path = (root_dir / (record.path + ".tar.gz"))
@@ -676,12 +678,24 @@ def nomad_upload_data(task_ids: List[str], username: str, password: str, gdrive_
             references = [f"https://materialsproject.org/tasks/{external_id}"]
             entries: dict = nomad_json.get("entries")
             entries[nomad_name] = {"external_id": external_id, "references": references}
+            files_paths.append(full_file_path.as_posix())
     # write json data to file
-    file_name = f"nomad_{datetime.now()}.json"
-    json_file_path = root_dir / file_name
+    json_file_name = f"nomad_{datetime.now().strftime(fmt='%m/%d/%Y')}.json"
+    json_file_path = root_dir / json_file_name
     with open(json_file_path.as_posix(), 'w') as outfile:
         json.dump(nomad_json, outfile, indent=4)
     logger.info("NOMAD json created")
+
+    # create zip file
+    zip_file_name = f"nomad_{datetime.now().strftime(fmt='%m/%d/%Y')}.zip"
+    with ZipFile(zip_file_name, 'w') as my_zip:
+        for file_path in files_paths:
+            my_zip.write(file_path)
+        my_zip.write(json_file_path.as_posix())
+    logger.info("NOMAD Zip Prepared")
+
+
+    # clean up (remove json, remove zip)
 
     # # upload zip
     #
