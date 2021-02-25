@@ -647,14 +647,16 @@ def nomad_upload_data(task_ids: List[str], username: str, password: str, gdrive_
             entries[nomad_name] = {"external_id": external_id, "references": references}
             files_paths.append(full_file_path.as_posix())
     # write json data to file
-    json_file_name = f"nomad_{datetime.now().strftime('%m_%d_%Y_%H_%M_%S')}.json"
+    # json_file_name = f"nomad_{datetime.now().strftime('%m_%d_%Y_%H_%M_%S')}.json"
+    json_file_name = f"nomad_{datetime.now().strftime('%m_%d_%Y')}.json"
     json_file_path = root_dir / json_file_name
     with open(json_file_path.as_posix(), 'w') as outfile:
         json.dump(nomad_json, outfile, indent=4)
     logger.info("NOMAD JSON prepared")
 
     # create zip file
-    zip_file_name = f"nomad_{datetime.now().strftime('%m_%d_%Y_%H_%M_%S')}.zip"
+    # zip_file_name = f"nomad_{datetime.now().strftime('%m_%d_%Y_%H_%M_%S')}.zip"
+    zip_file_name = f"nomad_{datetime.now().strftime('%m_%d_%Y')}.zip"
     zip_file_path = root_dir / zip_file_name
     with ZipFile(zip_file_path.as_posix(), 'w') as my_zip:
         for file_path in files_paths:
