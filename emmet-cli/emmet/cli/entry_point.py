@@ -95,7 +95,7 @@ def emmet(spec_or_dbfile, run, issue, sbatch, bb, yes, no_dupe_check, verbose):
     else:
         click.secho("DRY RUN! Add --run flag to execute changes.", fg="green")
 
-    install_mp_handler(logger=logger)
+    # install_mp_handler(logger=logger)
 
 
 def safe_entry_point():
