@@ -672,13 +672,12 @@ def nomad_upload_data(task_ids: List[str], username: str, password: str, gdrive_
     zipdir(upload_preparation_dir.as_posix(), zipf)
     zipf.close()
     logger.info("NOMAD Zip file prepared")
-    print(zipped_upload_preparation_file_path)
-    # # upload the zipped file
-    # with open(zipped_upload_preparation_file_path, 'rb') as f:
-    #     upload = client.uploads.upload(file=f, publish_directly=True).response().result
-    #     for record in records:
-    #         record.nomad_upload_id = upload.upload_id
-    #         record.nomad_updated = datetime.now()
+    # upload the zipped file
+    with open(zipped_upload_preparation_file_path, 'rb') as f:
+        upload = client.uploads.upload(file=f, publish_directly=True).response().result
+        for record in records:
+            record.nomad_upload_id = upload.upload_id
+            record.nomad_updated = datetime.now()
     #
     # logger.info("Upload to NOMAD started")
     # # wait until upload finish
