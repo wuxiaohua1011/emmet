@@ -665,7 +665,7 @@ def nomad_upload_data(task_ids: List[str], username: str, password: str, gdrive_
                         "external_db": "Materials Project",
                         "entries": dict()}
     # populate json
-    files_paths:List[str] = []
+    files_paths: List[str] = []
     for record in records:
         full_path_without_suffix: Path = root_dir / record.path
         full_file_path = (root_dir / (record.path + ".tar.gz"))
@@ -674,7 +674,7 @@ def nomad_upload_data(task_ids: List[str], username: str, password: str, gdrive_
             logger.info(f"File not found: Record can no longer be found in {full_file_path}")
         else:
             my_tar = tarfile.open(full_file_path.as_posix(), "r")
-            file_names =  my_tar.getnames()
+            file_names = my_tar.getnames()
             vasp_run_names = [name for name in file_names if "vasprun" in name]
             vasp_run_name = Path(vasp_run_names[0]).name
             nomad_name = (full_path_without_suffix / vasp_run_name).as_posix()
@@ -685,7 +685,7 @@ def nomad_upload_data(task_ids: List[str], username: str, password: str, gdrive_
             entries[nomad_name] = {"external_id": external_id, "references": references}
             files_paths.append(full_file_path.as_posix())
     # write json data to file
-    json_file_name = f"nomad_{datetime.now().strftime('%m_%d_%Y')}.json"
+    json_file_name = f"nomad_{datetime.now().strftime('%m_%d_%Y_%H_%M_%S')}.json"
     json_file_path = root_dir / json_file_name
     with open(json_file_path.as_posix(), 'w') as outfile:
         json.dump(nomad_json, outfile, indent=4)
@@ -693,51 +693,45 @@ def nomad_upload_data(task_ids: List[str], username: str, password: str, gdrive_
 
     # create zip file
     zip_file_name = f"nomad_{datetime.now().strftime('%m_%d_%Y')}.zip"
-    with ZipFile(zip_file_name, 'w') as my_zip:
+    zip_file_path = root_dir / zip_file_name
+    with ZipFile(zip_file_path.as_posix(), 'w') as my_zip:
         for file_path in files_paths:
             my_zip.write(file_path)
         my_zip.write(json_file_path.as_posix())
     logger.info("NOMAD Zip Prepared")
 
+    # upload the zipped file
+    upload = nomad_upload_helper(client=client, file=zip_file_path.open('rb'))
+    for record in records:
+        record.nomad_upload_id = upload.upload_id
+        record.nomad_updated = datetime.now()
+
+    # wait until upload finish
+    while True:
+        upload = client.uploads.get_upload(upload_id=upload.upload_id).response().result
+        if upload.task_running:
+            logger.info(f"Upload [{upload.upload_id}] is still running")
+            time.sleep(5)
+        else:
+            break
+
+    # check if upload succeeded and update our database
+    upload = client.uploads.get_upload(upload_id=upload.upload_id).response().result
+    if upload.tasks_status != 'SUCCESS':
+        logger.error(f"Something went wrong. Cannot record with upload id [{upload.upload_id}] failed: {upload.errors}")
+        client.uploads.delete_upload(upload_id=upload.upload_id)
+    else:
+        gdrive_mongo_store.update(docs=[record.dict() for record in records], key="task_id")
+        logger.info("Upload succeeded, database updated")
+    # upload zip
 
     # clean up (remove json, remove zip)
+    # if os.path.exists(json_file_path.as_posix()):
+    #     os.remove(json_file_path.as_posix())
+    # if os.path.exists(zip_file_path.as_posix()):
+    #     os.remove(zip_file_path.as_posix())
 
-    # # upload zip
-    #
-    # uploads: Dict[str: Any] = dict()
-    # for record in records:
-    #     full_file_path = (root_dir / (record.path + ".tar.gz"))
-    #     if not full_file_path.exists():
-    #         record.error = f"Record can no longer be found in {full_file_path}"
-    #         logger.info(f"File not found: Record can no longer be found in {full_file_path}")
-    #     else:
-    #         upload = nomad_upload_helper(client=client, file=full_file_path.open('rb'))
-    #         record.nomad_upload_id = upload.upload_id
-    #         record.nomad_updated = datetime.now()
-    #         logger.info(f"task [{record.task_id}] has started uploading. upload id: [{record.nomad_upload_id}]")
-    #         uploads[upload.upload_id] = upload
-    #
-    # # wait until all uploads are completed
-    # while True:
-    #     should_break = True
-    #     for upload_id in uploads.keys():
-    #         upload = client.uploads.get_upload(upload_id=upload_id).response().result
-    #         if upload.tasks_running:
-    #             should_break = False
-    #             logger.info(f"upload [{upload.upload_id}] is still running")
-    #             time.sleep(5)
-    #
-    #     if should_break:
-    #         break
-    #
-    # for upload_id in uploads.keys():
-    #     upload = client.uploads.get_upload(upload_id=upload_id).response().result
-    #     if upload.tasks_status != 'SUCCESS':
-    #         print(upload.tasks_status)
-    #         logger.error(
-    #             f"Something went wrong. Cannot record with upload id [{upload.upload_id}] failed: {upload.errors}")
-    #         client.uploads.delete_upload(upload_id=upload_id).response().result
-    # gdrive_mongo_store.update(docs=[record.dict() for record in records], key="task_id")
+
     return True
 
 
