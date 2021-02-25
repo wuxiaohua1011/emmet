@@ -641,6 +641,8 @@ def nomad_upload_data(task_ids: List[str], username: str, password: str, gdrive_
             vasp_run_names = [name for name in file_names if "vasprun" in name]
             vasp_run_name = Path(vasp_run_names[0]).name
             nomad_name = (Path(record.path) / vasp_run_name).as_posix()
+            last_launcher_name_index = nomad_name.rfind("launcher")
+            nomad_name = nomad_name[last_launcher_name_index:]
             external_id = record.task_id
             references = [f"https://materialsproject.org/tasks/{external_id}"]
             entries: dict = nomad_json.get("entries")
