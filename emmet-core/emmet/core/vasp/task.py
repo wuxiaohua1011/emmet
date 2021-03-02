@@ -130,9 +130,11 @@ class TaskDocument(StructureMetadata):
     task_id: MPID = Field(None, description="the Task ID For this document")
     tags: List[str] = Field([], description="Metadata tags for this task document")
 
+
     calcs_reversed: List[Dict] = Field(
         [], description="The 'raw' calculation docs used to assembled this task"
     )
+
 
     @property
     def run_type(self) -> RunType:
