@@ -26,6 +26,17 @@ from zipfile import ZipFile, ZIP_DEFLATED
 
 import click
 import mgzip
+
+
+from datetime import datetime
+from collections import defaultdict
+from pymatgen.core import Structure
+from pymatgen.util.provenance import StructureNL
+
+from datetime import datetime
+from collections import defaultdict
+from pymatgen import Structure
+from pymatgen.util.provenance import StructureNL
 from atomate.vasp.database import VaspCalcDb
 from atomate.vasp.drones import VaspDrone
 from bravado.client import SwaggerClient
@@ -348,7 +359,9 @@ def reconstruct_command(sbatch=False):
     return " ".join(command).strip().strip("\\")
 
 
+
 def parse_vasp_dirs(vaspdirs, tag, task_ids, snl_metas):  # noqa: C901
+
     process = multiprocessing.current_process()
     name = process.name
     chunk_idx = int(name.rsplit("-")[1]) - 1
@@ -402,6 +415,9 @@ def parse_vasp_dirs(vaspdirs, tag, task_ids, snl_metas):  # noqa: C901
             continue
 
         task_doc["sbxn"] = sbxn
+
+        manual_taskid = isinstance(task_ids, dict)
+
         snl_metas_avail = isinstance(snl_metas, dict)
         task_id = task_ids[launcher] if manual_taskid else task_ids[chunk_idx][count]
         task_doc["task_id"] = task_id
@@ -423,6 +439,24 @@ def parse_vasp_dirs(vaspdirs, tag, task_ids, snl_metas):  # noqa: C901
                 authors = snl_meta.get(
                     "authors", ["Materials Project <feedback@materialsproject.org>"]
                 )
+                kwargs = {"projects": [tag]}
+                if references:
+                    kwargs["references"] = references
+
+                struct = Structure.from_dict(task_doc["input"]["structure"])
+                snl = StructureNL(struct, authors, **kwargs)
+                snl_dct = snl.as_dict()
+                snl_dct.update(get_meta_from_structure(struct))
+                snl_id = snl_meta["snl_id"]
+                snl_dct["snl_id"] = snl_id
+                logger.info(f"Created SNL object for {snl_id}.")
+
+        snl_dct = None
+        if snl_metas_avail:
+            snl_meta = snl_metas.get(launcher)
+            if snl_meta:
+                references = snl_meta.get("references")
+                authors = snl_meta.get("authors", ["Materials Project <feedback@materialsproject.org>"])
                 kwargs = {"projects": [tag]}
                 if references:
                     kwargs["references"] = references
@@ -493,6 +527,7 @@ def parse_vasp_dirs(vaspdirs, tag, task_ids, snl_metas):  # noqa: C901
                         logger.info(
                             f"SNL {result.inserted_id} inserted into {snl_collection.full_name}."
                         )
+
 
                     shutil.rmtree(vaspdir)
                     logger.info(f"{name} Successfully parsed and removed {launcher}.")
