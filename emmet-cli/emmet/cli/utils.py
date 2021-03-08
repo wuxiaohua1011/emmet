@@ -640,7 +640,7 @@ def nomad_upload_data(task_ids: List[str], username: str, password: str, gdrive_
             file_names = my_tar.getnames()
             vasp_run_names = [name for name in file_names if "vasprun" in name]
             vasp_run_name = Path(vasp_run_names[0]).name
-            directory_index = full_path_without_suffix.as_posix().rfind("block")[0]
+            directory_index = full_path_without_suffix.as_posix().rfind("block")
             nomad_name = (Path((full_path_without_suffix.as_posix()[directory_index:])) / vasp_run_name).as_posix()
             external_id = record.task_id
             references = [f"https://materialsproject.org/tasks/{external_id}"]
