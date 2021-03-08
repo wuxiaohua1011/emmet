@@ -681,7 +681,7 @@ def nomad_upload_data(task_ids: List[str], username: str, password: str, gdrive_
             # nomad_name = (Path((full_path_without_suffix.as_posix()[directory_index:])) / vasp_run_name).as_posix()
 
             last_launcher_index = full_path_without_suffix.as_posix().rfind("launcher")
-            nomad_name = (Path(full_path_without_suffix[last_launcher_index:]) / vasp_run_name).as_posix()
+            nomad_name = (Path(full_path_without_suffix.as_posix()[last_launcher_index:]) / vasp_run_name).as_posix()
 
             external_id = record.task_id
             references = [f"https://materialsproject.org/tasks/{external_id}"]
