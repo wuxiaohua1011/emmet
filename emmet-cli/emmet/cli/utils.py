@@ -628,10 +628,11 @@ def nomad_upload_data(task_ids: List[str], username: str, password: str, gdrive_
                         "external_db": "Materials Project",
                         "entries": dict()}
     # populate json
-    files_paths: List[str] = []
+    zip_file_paths: List[Tuple[str, str]] = list() # list of (full_path/launcher-xyz.tar.gz launcher-xyz.tar.gz)
+
     for record in records:
         full_path_without_suffix: Path = root_dir / record.path
-        full_file_path = (root_dir / (record.path + ".tar.gz"))
+        full_file_path:Path = (root_dir / (record.path + ".tar.gz"))
         if not full_file_path.exists():
             record.error = f"Record can no longer be found in {full_file_path}"
             logger.info(f"File not found: Record can no longer be found in {full_file_path}")
@@ -640,17 +641,16 @@ def nomad_upload_data(task_ids: List[str], username: str, password: str, gdrive_
             file_names = my_tar.getnames()
             vasp_run_names = [name for name in file_names if "vasprun" in name]
             vasp_run_name = Path(vasp_run_names[0]).name
-            # directory_index = full_path_without_suffix.as_posix().rfind("block")
-            # nomad_name = (Path((full_path_without_suffix.as_posix()[directory_index:])) / vasp_run_name).as_posix()
-
-            last_launcher_index = full_path_without_suffix.as_posix().rfind("launcher")
-            nomad_name = (Path(full_path_without_suffix.as_posix()[last_launcher_index:]) / vasp_run_name).as_posix()
-
             external_id = record.task_id
             references = [f"https://materialsproject.org/tasks/{external_id}"]
             entries: dict = nomad_json.get("entries")
+            # directory_index = full_path_without_suffix.as_posix().rfind("block")
+            # nomad_name = (Path((full_path_without_suffix.as_posix()[directory_index:])) / vasp_run_name).as_posix()
+            last_launcher_index = full_path_without_suffix.as_posix().rfind("launcher")
+            nomad_name = (Path(full_path_without_suffix.as_posix()[last_launcher_index:]) / vasp_run_name).as_posix()
             entries[nomad_name] = {"external_id": external_id, "references": references}
-            files_paths.append(full_file_path.as_posix())
+            last_launcher_index = full_file_path.as_posix().rfind("launcher")
+            zip_file_paths.append((full_file_path.as_posix(), full_file_path.as_posix()[last_launcher_index:]))
 
     # prepare upload data
     upload_preparation_dir = root_dir / Path(f"nomad_upload_{datetime.now().strftime('%m_%d_%Y')}")
@@ -664,17 +664,14 @@ def nomad_upload_data(task_ids: List[str], username: str, password: str, gdrive_
     with open(json_file_path.as_posix(), 'w') as outfile:
         json.dump(nomad_json, outfile, indent=4)
     logger.info("NOMAD JSON prepared")
-    # print("NOMAD JSON prepared")
-    # # untar files to upload preparation dir
-    # for file_path in files_paths:
-    #     shutil.unpack_archive(file_path, extract_dir=upload_preparation_dir)
-    #
-    # # zip the file
-    # zipped_upload_preparation_file_path = upload_preparation_dir.as_posix()+".zip"
-    # zipf = ZipFile(zipped_upload_preparation_file_path, 'w')
-    # zipdir(upload_preparation_dir.as_posix(), zipf)
-    # zipf.close()
-    # # logger.info("NOMAD Zip prepared")
+
+    # zip the file
+    zipped_upload_preparation_file_path = upload_preparation_dir.as_posix()+".zip"
+    zipf = ZipFile(zipped_upload_preparation_file_path, 'w')
+    for full_file_path, arcname in zip_file_paths:
+        zipf.write(filename=full_file_path, arcname=arcname)
+    zipf.close()
+    logger.info("NOMAD Zip prepared")
     # print("NOMAD Zip prepared")
     # # upload the zipped file
     # with open(zipped_upload_preparation_file_path, 'rb') as f:
