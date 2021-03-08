@@ -705,6 +705,7 @@ def nomad_upload_data(task_ids: List[str], username: str, password: str, gdrive_
     # zip the file
     zipped_upload_preparation_file_path = upload_preparation_dir.as_posix()+".zip"
     zipf = ZipFile(zipped_upload_preparation_file_path, 'w')
+    zipf.write(filename=json_file_path.as_posix(), arcname="nomad.json")
     for full_file_path, arcname in zip_file_paths:
         zipf.write(filename=full_file_path, arcname=arcname)
     zipf.close()
