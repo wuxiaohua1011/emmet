@@ -697,53 +697,22 @@ def nomad_upload_data(task_ids: List[str], username: str, password: str, gdrive_
     json_file_path = upload_preparation_dir / json_file_name
     with open(json_file_path.as_posix(), 'w') as outfile:
         json.dump(nomad_json, outfile, indent=4)
-    # logger.info("NOMAD JSON prepared")
-    print("NOMAD JSON prepared")
+    logger.info("NOMAD JSON prepared")
+    # print("NOMAD JSON prepared")
     # # untar files to upload preparation dir
-    for file_path in files_paths:
-        shutil.unpack_archive(file_path, extract_dir=upload_preparation_dir)
-
-    # zip the file
-    zipped_upload_preparation_file_path = upload_preparation_dir.as_posix()+".zip"
-    zipf = ZipFile(zipped_upload_preparation_file_path, 'w')
-    zipdir(upload_preparation_dir.as_posix(), zipf)
-    zipf.close()
-    # logger.info("NOMAD Zip prepared")
-    print("NOMAD Zip prepared")
-    # upload the zipped file
-    with open(zipped_upload_preparation_file_path, 'rb') as f:
-        upload = client.uploads.upload(file=f, publish_directly=True).response().result
-
-
+    # for file_path in files_paths:
+    #     shutil.unpack_archive(file_path, extract_dir=upload_preparation_dir)
+    #
+    # # zip the file
+    # zipped_upload_preparation_file_path = upload_preparation_dir.as_posix()+".zip"
+    # zipf = ZipFile(zipped_upload_preparation_file_path, 'w')
+    # zipdir(upload_preparation_dir.as_posix(), zipf)
+    # zipf.close()
+    # # logger.info("NOMAD Zip prepared")
+    # print("NOMAD Zip prepared")
+    # # upload the zipped file
     # with open(zipped_upload_preparation_file_path, 'rb') as f:
     #     upload = client.uploads.upload(file=f, publish_directly=True).response().result
-    #     for record in records:
-    #         record.nomad_upload_id = upload.upload_id
-    #         record.nomad_updated = datetime.now()
-    #
-    # logger.info("Upload to NOMAD started")
-    # # wait until upload finish
-    # while upload.tasks_running:
-    #     upload = client.uploads.get_upload(upload_id=upload.upload_id).response().result
-    #     time.sleep(5)
-    #     logger.info(
-    #         "Still Uploading... " + 'processed: %d, failures: %d' % (upload.processed_calcs, upload.failed_calcs))
-    # logger.info("Done! " + 'processed: %d, failures: %d' % (upload.processed_calcs, upload.failed_calcs))
-    #
-    # # check if upload succeeded and update our database
-    # upload = client.uploads.get_upload(upload_id=upload.upload_id).response().result
-    # if upload.tasks_status != 'SUCCESS':
-    #     logger.error(f"Something went wrong. Cannot record with upload id [{upload.upload_id}] failed: {upload.errors}")
-    #     client.uploads.delete_upload(upload_id=upload.upload_id)
-    # else:
-    #     gdrive_mongo_store.update(docs=[record.dict() for record in records], key="task_id")
-    #     logger.info("Upload succeeded, database updated")
-
-    # clean up (remove json, remove zip, remove uploaded launchers)
-    # if os.path.exists(json_file_path.as_posix()):
-    #     os.remove(json_file_path.as_posix())
-    # if os.path.exists(zip_file_path.as_posix()):
-    #     os.remove(zip_file_path.as_posix())
 
     return True
 
