@@ -491,6 +491,7 @@ def find_un_uploaded_materials_task_id(gdrive_mongo_store: MongograntStore,
     retry = 0
     while retry < 5 and len(unuploaded_task_ids) < max_num:
         # get a list of materials
+        print(f"uploaded_materials: {uploaded_materials}")
         materials_task_id_dict: Dict[str, List[str]] = find_unuploaded_materials_task_id(
             material_mongo_store=material_mongo_store, max_num=max_num, exclude_list=list(uploaded_materials))
         # get their respective task_ids and construct materials -> [task_id] dictionary
@@ -512,7 +513,7 @@ def find_un_uploaded_materials_task_id(gdrive_mongo_store: MongograntStore,
 
         retry += 1
         print("Retrying...")
-    print(unuploaded_task_ids)
+    print(f"unuploaded_task_ids: {unuploaded_task_ids}")
     return []
 
 
