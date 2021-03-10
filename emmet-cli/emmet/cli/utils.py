@@ -526,32 +526,49 @@ def find_un_uploaded_materials_task_id(gdrive_mongo_store: MongograntStore,
     unuploaded_task_ids: Set[str] = set()
     uploaded_materials: Set[str] = set()
 
-    # get a list of materials
-    materials_task_id_dict: Dict[str, List[str]] = find_material_task_ids(
-        material_mongo_store=material_mongo_store)
-    print(f"material_task_ids found -> {len(materials_task_id_dict)}")
-    # get their respective task_ids and construct materials -> [task_id] dictionary
-    task_ids_to_check: Set[str] = set()
-    for materials, task_ids in materials_task_id_dict.items():
-        task_ids_to_check = task_ids_to_check.union(set(task_ids))
-    print("task_ids_to_check constructed")
-    # check if those task_ids have been already uploaded
-    gdrive_results = gdrive_mongo_store.query(criteria={"task_id": {"$in": list(task_ids_to_check)}},
-                                              properties={"task_id": 1})
-    for gdrive_result in gdrive_results:
-        gdrive_task_id = gdrive_result["task_id"]
-        for material_id, task_ids in materials_task_id_dict.items():
-            if gdrive_task_id in task_ids:
-                uploaded_materials.add(material_id)
-    print("gdrive check finished")
-    for material_id, task_ids in materials_task_id_dict.items():
-        if material_id not in uploaded_materials:
-            unuploaded_task_ids = unuploaded_task_ids.union(set(task_ids))
-        if len(unuploaded_task_ids) >= max_num:
-            break
-    print(f"unuploaded_task_ids: {unuploaded_task_ids}")
-    return []
+    # get a ALL task ids, sorted in earliest material order
+    # find which ones are not uploaded
+    task_ids: Dict[str, None] = find_task_ids_sorted(material_mongo_store)
+    print(len(task_ids))
 
+    # # get a list of materials
+    # materials_task_id_dict: Dict[str, List[str]] = find_material_task_ids(
+    #     material_mongo_store=material_mongo_store)
+    # print(f"material_task_ids found -> {len(materials_task_id_dict)}")
+    # # get their respective task_ids and construct materials -> [task_id] dictionary
+    # task_ids_to_check: Set[str] = set()
+    # for materials, task_ids in materials_task_id_dict.items():
+    #     task_ids_to_check = task_ids_to_check.union(set(task_ids))
+    # print("task_ids_to_check constructed")
+    # # check if those task_ids have been already uploaded
+    # gdrive_results = gdrive_mongo_store.query(criteria={"task_id": {"$in": list(task_ids_to_check)}},
+    #                                           properties={"task_id": 1})
+    # for gdrive_result in gdrive_results:
+    #     gdrive_task_id = gdrive_result["task_id"]
+    #     for material_id, task_ids in materials_task_id_dict.items():
+    #         if gdrive_task_id in task_ids:
+    #             uploaded_materials.add(material_id)
+    # print("gdrive check finished")
+    # for material_id, task_ids in materials_task_id_dict.items():
+    #     if material_id not in uploaded_materials:
+    #         unuploaded_task_ids = unuploaded_task_ids.union(set(task_ids))
+    #     if len(unuploaded_task_ids) >= max_num:
+    #         break
+    # print(f"unuploaded_task_ids: {unuploaded_task_ids}")
+    # return []
+
+def find_task_ids_sorted(material_mongo_store:MongograntStore) -> Dict[str, None]:
+    result: Dict[str, None] = dict()
+    materials = material_mongo_store.query(
+        criteria={"deprecated": False},
+        properties={"task_id": 1, "blessed_tasks": 1, "last_updated": 1},
+        sort={"last_updated": Sort.Descending})
+    for material in materials:
+        if "blessed_tasks" in material:
+            blessed_tasks: dict = material["blessed_tasks"]
+            task_ids = list(blessed_tasks.values())
+            result.update( dict.fromkeys(task_ids))
+    return result
 
 def find_material_task_ids(material_mongo_store) -> Dict[str, List[str]]:
     materials = material_mongo_store.query(
@@ -564,66 +581,6 @@ def find_material_task_ids(material_mongo_store) -> Dict[str, List[str]]:
             blessed_tasks: dict = material["blessed_tasks"]
             materials_task_id_dict[material["task_id"]] = list(blessed_tasks.values())
     return materials_task_id_dict
-
-    # # find max_num materials from mateirals_mongo_store that is not in gdrive_log
-    # material_ids, task_ids = find_materials_task_id_helper(material_mongo_store=material_mongo_store, max_num=max_num,
-    #                                                        exclude_list=[])
-    # result_gdrive_task_ids: Set[str] = set(task_ids)
-    # # remove any of them that are already in the gdrive store
-    # gdrive_task_id = set(
-    #     [entry["task_id"] for entry in
-    #      gdrive_mongo_store.query(criteria={"task_id": {"$in": list(result_gdrive_task_ids)}},
-    #                               properties={"task_id": 1})])
-    # result_gdrive_task_ids = result_gdrive_task_ids - gdrive_task_id
-    # retry = 0  # if there are really no more materials to add, just exit
-    # materials_to_exclude = set()
-    # while len(result_gdrive_task_ids) < max_num and retry < 5:
-    # construct dictionary of material_id -> [task_ids]
-    # remove materials in which its task_id is in result_gdrive_task_ids
-    #
-    # # fetch again from materials mongo store if there are more space
-    # material_ids, task_ids = find_materials_task_id_helper(material_mongo_store=material_mongo_store,
-    #                                                        max_num=max_num, exclude_list=list(materials_to_exclude))
-    #
-    #
-    # # remove any of them that are not in gdrive store
-    # result_gdrive_task_ids = set(task_ids)
-    # # remove any of them that are already in the gdrive store
-    # gdrive_task_id = set(
-    #     [entry["task_id"] for entry in
-    #      gdrive_mongo_store.query(criteria={"task_id": {"$in": list(result_gdrive_task_ids)}},
-    #                               properties={"task_id": 1})])
-    # result_gdrive_task_ids = result_gdrive_task_ids - gdrive_task_id
-    #     retry += 1
-    # return list(result_gdrive_task_ids)
-
-
-# def find_materials_task_id_helper(material_mongo_store, max_num, exclude_list=None) -> Tuple[List[str], List[str]]:
-#     """
-#
-#     :param material_mongo_store:
-#     :param max_num:
-#     :param exclude_list:
-#     :return:
-#         (material_ids, task_ids)
-#     """
-#     if exclude_list is None:
-#         exclude_list = []
-#     material_ids: Set[str] = set()
-#     task_ids: List[str] = []
-#     materials = material_mongo_store.query(
-#         criteria={"$and": [{"deprecated": False}, {"task_id": {"$nin": exclude_list}}]},
-#         properties={"task_id": 1, "blessed_tasks": 1, "last_updated": 1},
-#         sort={"last_updated": Sort.Descending},
-#         limit=max_num)
-#
-#     for material in materials:
-#         if "blessed_tasks" in material:
-#             blessed_tasks: dict = material["blessed_tasks"]
-#             task_ids.extend(list(blessed_tasks.values()))
-#             material_ids.add(material["task_id"])
-#     return list(material_ids.union(exclude_list)), task_ids
-
 
 class GDriveLog(BaseModel):
     path: str = Field(..., title="Path for the file",
