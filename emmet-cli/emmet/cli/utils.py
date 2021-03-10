@@ -538,12 +538,18 @@ def find_un_uploaded_materials_task_id(gdrive_mongo_store: MongograntStore,
         gdrive_results = gdrive_mongo_store.query(criteria={"task_id": {"$in": list(task_ids_to_check)}},
                                                   properties={"task_id": 1})
         for gdrive_result in gdrive_results:
-            print(gdrive_result)
-        # if uploaded, remove that material
-        # otherwise, add to un-uploaded materials dictionary
+            gdrive_task_id = gdrive_result["task_id"]
+            for material_id, task_ids in materials_task_id_dict.items():
+                if gdrive_task_id in task_ids:
+                    uploaded_materials.add(material_id)
+
+        for material_id, task_ids in materials_task_id_dict.items():
+            if material_id not in uploaded_materials:
+                unuploaded_task_ids = unuploaded_task_ids.union(set(task_ids))
 
         retry += 1
-
+        print("Retrying...")
+    print(unuploaded_task_ids)
     return []
 
 
