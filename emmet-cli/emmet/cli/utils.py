@@ -557,16 +557,24 @@ def find_un_uploaded_materials_task_id(gdrive_mongo_store: MongograntStore,
 def find_unuploaded_materials_task_id(material_mongo_store, max_num, exclude_list=None) -> Dict[str, List[str]]:
     if exclude_list is None:
         exclude_list = []
+    # materials = material_mongo_store.query(
+    #     criteria={"$and": [{"deprecated": False}, {"task_id": {"$nin": exclude_list}}]},
+    #     properties={"task_id": 1, "blessed_tasks": 1, "last_updated": 1},
+    #     sort={"last_updated": Sort.Descending},
+    #     limit=max_num)
     materials = material_mongo_store.query(
         criteria={"$and": [{"deprecated": False}, {"task_id": {"$nin": exclude_list}}]},
         properties={"task_id": 1, "blessed_tasks": 1, "last_updated": 1},
-        sort={"last_updated": Sort.Descending},
-        limit=max_num)
+        sort={"last_updated": Sort.Descending})
     materials_task_id_dict: Dict[str, List[str]] = dict()
+    count = 0
     for material in materials:
         if "blessed_tasks" in material:
             blessed_tasks: dict = material["blessed_tasks"]
             materials_task_id_dict[material["task_id"]] = list(blessed_tasks.values())
+            count += 1
+        if count >= max_num:
+            break
     return materials_task_id_dict
 
     # # find max_num materials from mateirals_mongo_store that is not in gdrive_log
