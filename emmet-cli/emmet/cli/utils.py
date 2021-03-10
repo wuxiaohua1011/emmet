@@ -484,62 +484,106 @@ def find_un_uploaded_materials_task_id(gdrive_mongo_store: MongograntStore,
     :return:
         list of materials that are not uploaded
     """
-    # find max_num materials from mateirals_mongo_store that is not in gdrive_log
-    material_ids, task_ids = find_materials_task_id_helper(material_mongo_store=material_mongo_store, max_num=max_num,
-                                                           exclude_list=[])
 
-    result_gdrive_task_ids: Set[str] = set(task_ids)
-    # remove any of them that are already in the gdrive store
-    gdrive_task_id = set(
-        [entry["task_id"] for entry in
-         gdrive_mongo_store.query(criteria={"task_id": {"$in": list(result_gdrive_task_ids)}},
-                                  properties={"task_id": 1})])
-    result_gdrive_task_ids = result_gdrive_task_ids - gdrive_task_id
-    retry = 0  # if there are really no more materials to add, just exit
-    while len(result_gdrive_task_ids) < max_num and retry < 5:
+    # keep track of a dictionary of un-uploaded materials -> [task_id]
+    unuploaded_task_ids: Set[str] = set()
+    uploaded_materials: Set[str] = set()
+    retry = 0
+    while retry < 5 and len(unuploaded_task_ids) < max_num:
+        # get a list of materials
+        materials_task_id_dict: Dict[str, List[str]] = find_unuploaded_materials_task_id(
+            material_mongo_store=material_mongo_store,
+            max_num=max_num, exclude_list=uploaded_materials)
+        # get their respective task_ids and construct materials -> [task_id] dictionary
+        task_ids_to_check: Set[str] = set()
+        for materials, task_ids in materials_task_id_dict.items():
+            task_ids_to_check.union(set(task_ids))
+        # check if those task_ids have been already uploaded
+        gdrive_results = gdrive_mongo_store.query(criteria={"task_id": {"$in": list(task_ids_to_check)}},
+                                                  properties={"task_id": 1})
+        for gdrive_result in gdrive_results:
+            print(gdrive_result)
+        # if uploaded, remove that material
+        # otherwise, add to un-uploaded materials dictionary
 
-        # fetch again from materials mongo store if there are more space
-        material_ids, task_ids = find_materials_task_id_helper(material_mongo_store=material_mongo_store,
-                                                               max_num=max_num, exclude_list=list(material_ids))
-
-        # remove any of them that are not in gdrive store
-        result_gdrive_task_ids = set(task_ids)
-        # remove any of them that are already in the gdrive store
-        gdrive_task_id = set(
-            [entry["task_id"] for entry in
-             gdrive_mongo_store.query(criteria={"task_id": {"$in": list(result_gdrive_task_ids)}},
-                                      properties={"task_id": 1})])
-        print(f"New task_ids = {task_ids} | Gdrive Task ids = {gdrive_task_id}")
-        result_gdrive_task_ids = result_gdrive_task_ids - gdrive_task_id
         retry += 1
-    return list(result_gdrive_task_ids)
+
+    return []
 
 
-def find_materials_task_id_helper(material_mongo_store, max_num, exclude_list=None) -> Tuple[List[str], List[str]]:
-    """
-
-    :param material_mongo_store:
-    :param max_num:
-    :param exclude_list:
-    :return:
-        (material_ids, task_ids)
-    """
+def find_unuploaded_materials_task_id(material_mongo_store, max_num, exclude_list=None) -> Dict[str, List[str]]:
     if exclude_list is None:
         exclude_list = []
-    material_ids: Set[str] = set()
-    task_ids: List[str] = []
     materials = material_mongo_store.query(
         criteria={"$and": [{"deprecated": False}, {"task_id": {"$nin": exclude_list}}]},
         properties={"task_id": 1, "blessed_tasks": 1, "last_updated": 1},
         sort={"last_updated": Sort.Descending},
         limit=max_num)
-
+    materials_task_id_dict: Dict[str, List[str]] = dict()
     for material in materials:
         if "blessed_tasks" in material:
             blessed_tasks: dict = material["blessed_tasks"]
-            task_ids.extend(list(blessed_tasks.values()))
-            material_ids.add(material["task_id"])
-    return list(material_ids.union(exclude_list)), task_ids
+            materials_task_id_dict[material["task_id"]] = list(blessed_tasks.values())
+    return materials_task_id_dict
+
+    # # find max_num materials from mateirals_mongo_store that is not in gdrive_log
+    # material_ids, task_ids = find_materials_task_id_helper(material_mongo_store=material_mongo_store, max_num=max_num,
+    #                                                        exclude_list=[])
+    # result_gdrive_task_ids: Set[str] = set(task_ids)
+    # # remove any of them that are already in the gdrive store
+    # gdrive_task_id = set(
+    #     [entry["task_id"] for entry in
+    #      gdrive_mongo_store.query(criteria={"task_id": {"$in": list(result_gdrive_task_ids)}},
+    #                               properties={"task_id": 1})])
+    # result_gdrive_task_ids = result_gdrive_task_ids - gdrive_task_id
+    # retry = 0  # if there are really no more materials to add, just exit
+    # materials_to_exclude = set()
+    # while len(result_gdrive_task_ids) < max_num and retry < 5:
+    # construct dictionary of material_id -> [task_ids]
+    # remove materials in which its task_id is in result_gdrive_task_ids
+    #
+    # # fetch again from materials mongo store if there are more space
+    # material_ids, task_ids = find_materials_task_id_helper(material_mongo_store=material_mongo_store,
+    #                                                        max_num=max_num, exclude_list=list(materials_to_exclude))
+    #
+    #
+    # # remove any of them that are not in gdrive store
+    # result_gdrive_task_ids = set(task_ids)
+    # # remove any of them that are already in the gdrive store
+    # gdrive_task_id = set(
+    #     [entry["task_id"] for entry in
+    #      gdrive_mongo_store.query(criteria={"task_id": {"$in": list(result_gdrive_task_ids)}},
+    #                               properties={"task_id": 1})])
+    # result_gdrive_task_ids = result_gdrive_task_ids - gdrive_task_id
+    #     retry += 1
+    # return list(result_gdrive_task_ids)
+
+
+# def find_materials_task_id_helper(material_mongo_store, max_num, exclude_list=None) -> Tuple[List[str], List[str]]:
+#     """
+#
+#     :param material_mongo_store:
+#     :param max_num:
+#     :param exclude_list:
+#     :return:
+#         (material_ids, task_ids)
+#     """
+#     if exclude_list is None:
+#         exclude_list = []
+#     material_ids: Set[str] = set()
+#     task_ids: List[str] = []
+#     materials = material_mongo_store.query(
+#         criteria={"$and": [{"deprecated": False}, {"task_id": {"$nin": exclude_list}}]},
+#         properties={"task_id": 1, "blessed_tasks": 1, "last_updated": 1},
+#         sort={"last_updated": Sort.Descending},
+#         limit=max_num)
+#
+#     for material in materials:
+#         if "blessed_tasks" in material:
+#             blessed_tasks: dict = material["blessed_tasks"]
+#             task_ids.extend(list(blessed_tasks.values()))
+#             material_ids.add(material["task_id"])
+#     return list(material_ids.union(exclude_list)), task_ids
 
 
 class GDriveLog(BaseModel):
@@ -631,11 +675,11 @@ def nomad_upload_data(task_ids: List[str], username: str, password: str, gdrive_
                         "external_db": "Materials Project",
                         "entries": dict()}
     # populate json
-    zip_file_paths: List[Tuple[str, str]] = list() # list of (full_path/launcher-xyz.tar.gz launcher-xyz.tar.gz)
+    zip_file_paths: List[Tuple[str, str]] = list()  # list of (full_path/launcher-xyz.tar.gz launcher-xyz.tar.gz)
 
     for record in records:
         full_path_without_suffix: Path = root_dir / record.path
-        full_file_path:Path = (root_dir / (record.path + ".tar.gz"))
+        full_file_path: Path = (root_dir / (record.path + ".tar.gz"))
         if not full_file_path.exists():
             record.error = f"Record can no longer be found in {full_file_path}"
             logger.info(f"File not found: Record can no longer be found in {full_file_path}")
@@ -669,7 +713,7 @@ def nomad_upload_data(task_ids: List[str], username: str, password: str, gdrive_
     logger.info("NOMAD JSON prepared")
 
     # zip the file
-    zipped_upload_preparation_file_path = upload_preparation_dir.as_posix()+".zip"
+    zipped_upload_preparation_file_path = upload_preparation_dir.as_posix() + ".zip"
     zipf = ZipFile(zipped_upload_preparation_file_path, 'w')
     zipf.write(filename=json_file_path.as_posix(), arcname="nomad.json")
     for full_file_path, arcname in zip_file_paths:
