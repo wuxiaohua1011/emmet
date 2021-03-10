@@ -494,14 +494,13 @@ def find_un_uploaded_materials_task_id(gdrive_mongo_store: MongograntStore,
         materials_task_id_dict: Dict[str, List[str]] = find_unuploaded_materials_task_id(
             material_mongo_store=material_mongo_store, max_num=max_num, exclude_list=list(uploaded_materials))
         # get their respective task_ids and construct materials -> [task_id] dictionary
-
+        print("material task_id dict", materials_task_id_dict)
         task_ids_to_check: Set[str] = set()
         for materials, task_ids in materials_task_id_dict.items():
             task_ids_to_check.union(set(task_ids))
         # check if those task_ids have been already uploaded
         gdrive_results = gdrive_mongo_store.query(criteria={"task_id": {"$in": list(task_ids_to_check)}},
                                                   properties={"task_id": 1})
-        print(task_ids_to_check)
         for gdrive_result in gdrive_results:
             print(gdrive_result)
         # if uploaded, remove that material
