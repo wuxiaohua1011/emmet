@@ -532,7 +532,6 @@ def find_task_ids_sorted(material_mongo_store: MongograntStore) -> Dict[str, Non
             blessed_tasks: dict = material["blessed_tasks"]
             task_ids = list(blessed_tasks.values())
             result.update(dict.fromkeys(task_ids))
-            print(len(result))
     return result
 
 
