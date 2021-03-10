@@ -557,7 +557,8 @@ def find_un_uploaded_materials_task_id(gdrive_mongo_store: MongograntStore,
     # print(f"unuploaded_task_ids: {unuploaded_task_ids}")
     # return []
 
-def find_task_ids_sorted(material_mongo_store:MongograntStore) -> Dict[str, None]:
+
+def find_task_ids_sorted(material_mongo_store: MongograntStore) -> Dict[str, None]:
     result: Dict[str, None] = dict()
     materials = material_mongo_store.query(
         criteria={"deprecated": False},
@@ -567,8 +568,10 @@ def find_task_ids_sorted(material_mongo_store:MongograntStore) -> Dict[str, None
         if "blessed_tasks" in material:
             blessed_tasks: dict = material["blessed_tasks"]
             task_ids = list(blessed_tasks.values())
-            result.update( dict.fromkeys(task_ids))
+            result.update(dict.fromkeys(task_ids))
+            print(len(result))
     return result
+
 
 def find_material_task_ids(material_mongo_store) -> Dict[str, List[str]]:
     materials = material_mongo_store.query(
@@ -581,6 +584,7 @@ def find_material_task_ids(material_mongo_store) -> Dict[str, List[str]]:
             blessed_tasks: dict = material["blessed_tasks"]
             materials_task_id_dict[material["task_id"]] = list(blessed_tasks.values())
     return materials_task_id_dict
+
 
 class GDriveLog(BaseModel):
     path: str = Field(..., title="Path for the file",
