@@ -528,19 +528,17 @@ def find_un_uploaded_materials_task_id(gdrive_mongo_store: MongograntStore,
     retry = 0
     while retry < 5 and len(unuploaded_task_ids) < max_num:
         # get a list of materials
-        print("Getting materials")
         materials_task_id_dict: Dict[str, List[str]] = find_unuploaded_materials_task_id(
-            material_mongo_store=material_mongo_store,
-            max_num=max_num, exclude_list=list(uploaded_materials))
+            material_mongo_store=material_mongo_store, max_num=max_num, exclude_list=list(uploaded_materials))
         # get their respective task_ids and construct materials -> [task_id] dictionary
-        print("getting task_ids")
+
         task_ids_to_check: Set[str] = set()
         for materials, task_ids in materials_task_id_dict.items():
             task_ids_to_check.union(set(task_ids))
         # check if those task_ids have been already uploaded
         gdrive_results = gdrive_mongo_store.query(criteria={"task_id": {"$in": list(task_ids_to_check)}},
                                                   properties={"task_id": 1})
-        print("checking repetitions")
+        print(task_ids_to_check)
         for gdrive_result in gdrive_results:
             print(gdrive_result)
         # if uploaded, remove that material
