@@ -534,7 +534,6 @@ def find_un_uploaded_materials_task_id(gdrive_mongo_store: MongograntStore,
     task_ids_to_check: Set[str] = set()
     for materials, task_ids in materials_task_id_dict.items():
         task_ids_to_check = task_ids_to_check.union(set(task_ids))
-        print(f"constructing task_ids_to_check... -> {len(task_ids_to_check)}")
     print("task_ids_to_check constructed")
     # check if those task_ids have been already uploaded
     gdrive_results = gdrive_mongo_store.query(criteria={"task_id": {"$in": list(task_ids_to_check)}},
