@@ -484,15 +484,20 @@ def find_un_uploaded_materials_task_id(gdrive_mongo_store: MongograntStore,
     :return:
         list of materials that are not uploaded
     """
-
-    # keep track of a dictionary of un-uploaded materials -> [task_id]
-    unuploaded_task_ids: Set[str] = set()
-    uploaded_materials: Set[str] = set()
-
     # get a ALL task ids, sorted in earliest material order
     # find which ones are not uploaded
     task_ids: Dict[str, None] = find_task_ids_sorted(material_mongo_store)
-    print(len(task_ids))
+    gdrive_results = gdrive_mongo_store.query(criteria={"task_id": {"$in": list(task_ids)}},
+                                              properties={"task_id": 1})
+    uploaded_task_ids = set(gdrive_result["task_id"] for gdrive_result in gdrive_results )
+    for k in uploaded_task_ids:
+        task_ids.pop(k, None)
+    # task_ids at this point contain un-uploaded keys, sorted in order of materials update date
+    result: List[str] = list(task_ids.keys())[:max_num]
+    return result
+
+
+
 
     # # get a list of materials
     # materials_task_id_dict: Dict[str, List[str]] = find_material_task_ids(
