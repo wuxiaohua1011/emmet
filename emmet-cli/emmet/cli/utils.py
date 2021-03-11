@@ -534,35 +534,6 @@ def find_un_uploaded_materials_task_id(gdrive_mongo_store: MongograntStore,
     return result
 
 
-
-
-    # # get a list of materials
-    # materials_task_id_dict: Dict[str, List[str]] = find_material_task_ids(
-    #     material_mongo_store=material_mongo_store)
-    # print(f"material_task_ids found -> {len(materials_task_id_dict)}")
-    # # get their respective task_ids and construct materials -> [task_id] dictionary
-    # task_ids_to_check: Set[str] = set()
-    # for materials, task_ids in materials_task_id_dict.items():
-    #     task_ids_to_check = task_ids_to_check.union(set(task_ids))
-    # print("task_ids_to_check constructed")
-    # # check if those task_ids have been already uploaded
-    # gdrive_results = gdrive_mongo_store.query(criteria={"task_id": {"$in": list(task_ids_to_check)}},
-    #                                           properties={"task_id": 1})
-    # for gdrive_result in gdrive_results:
-    #     gdrive_task_id = gdrive_result["task_id"]
-    #     for material_id, task_ids in materials_task_id_dict.items():
-    #         if gdrive_task_id in task_ids:
-    #             uploaded_materials.add(material_id)
-    # print("gdrive check finished")
-    # for material_id, task_ids in materials_task_id_dict.items():
-    #     if material_id not in uploaded_materials:
-    #         unuploaded_task_ids = unuploaded_task_ids.union(set(task_ids))
-    #     if len(unuploaded_task_ids) >= max_num:
-    #         break
-    # print(f"unuploaded_task_ids: {unuploaded_task_ids}")
-    # return []
-
-
 def find_task_ids_sorted(material_mongo_store: MongograntStore) -> Dict[str, None]:
     result: Dict[str, None] = dict()
     materials = material_mongo_store.query(
