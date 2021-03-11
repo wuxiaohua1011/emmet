@@ -92,9 +92,11 @@ class ProvenanceDoc(PropertyDoc):
     @classmethod
     def from_SNLs(
         cls,
+
         material_id: MPID,
         snls: List[Dict],
     ) -> "ProvenanceDoc":
+
         """
         Converts legacy Pymatgen SNLs into a single provenance document
         """
