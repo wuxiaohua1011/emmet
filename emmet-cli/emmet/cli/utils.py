@@ -526,7 +526,7 @@ def find_un_uploaded_materials_task_id(gdrive_mongo_store: MongograntStore,
     task_ids: Dict[str, None] = find_task_ids_sorted(material_mongo_store)
     gdrive_results = gdrive_mongo_store.query(criteria={"task_id": {"$in": list(task_ids)}},
                                               properties={"task_id": 1})
-    uploaded_task_ids = set(gdrive_result["task_id"] for gdrive_result in gdrive_results )
+    uploaded_task_ids = set(gdrive_result["task_id"] for gdrive_result in gdrive_results)
     for k in uploaded_task_ids:
         task_ids.pop(k, None)
     # task_ids at this point contain un-uploaded keys, sorted in order of materials update date
@@ -650,7 +650,8 @@ def nomad_upload_data(task_ids: List[str], username: str, password: str, gdrive_
                         "external_db": "Materials Project",
                         "entries": dict()}
     # populate json
-    untar_source_file_path_to_arcname_map: List[Tuple[str, str]] = list()  # list of (full_path/launcher-xyz.tar.gz launcher-xyz.tar.gz)
+    untar_source_file_path_to_arcname_map: List[
+        Tuple[str, str]] = list()  # list of (full_path/launcher-xyz.tar.gz launcher-xyz.tar.gz)
 
     for record in records:
         full_path_without_suffix: Path = root_dir / record.path
@@ -672,7 +673,8 @@ def nomad_upload_data(task_ids: List[str], username: str, password: str, gdrive_
             nomad_name = (Path(full_path_without_suffix.as_posix()[last_launcher_index:]) / vasp_run_name).as_posix()
             entries[nomad_name] = {"external_id": external_id, "references": references}
             last_launcher_index = full_file_path.as_posix().rfind("launcher")
-            untar_source_file_path_to_arcname_map.append((full_file_path.as_posix(), full_file_path.as_posix()[last_launcher_index:]))
+            untar_source_file_path_to_arcname_map.append(
+                (full_file_path.as_posix(), full_file_path.as_posix()[last_launcher_index:]))
 
     # prepare upload data
     upload_preparation_dir = root_dir / Path(f"nomad_upload_{datetime.now().strftime('%m_%d_%Y')}")
@@ -694,16 +696,32 @@ def nomad_upload_data(task_ids: List[str], username: str, password: str, gdrive_
         tar.close()
     logger.info("Files un-tar.gz completed")
 
-
     # zip the file
     zipped_upload_preparation_file_path = upload_preparation_dir.as_posix() + ".zip"
     zipf = ZipFile(zipped_upload_preparation_file_path, 'w', ZIP_DEFLATED)
-    zipdir(root_dir.as_posix(), zipf)
+    zipdir(upload_preparation_dir.as_posix(), zipf)
     zipf.close()
     logger.info("Zip file created")
 
+    # upload to nomad
+    logger.info(f"Start Uploading [{zipped_upload_preparation_file_path}]"
+                f"[{os.path.getsize(zipped_upload_preparation_file_path)} bytes] to NOMAD")
+    with open(zipped_upload_preparation_file_path, 'rb') as f:
+        upload = client.uploads.upload(file=f, publish_directly=True).response().result
 
-    return True
+    while upload.tasks_running:
+        upload = client.uploads.get_upload(upload_id=upload.upload_id).response().result
+        time.sleep(5)
+        logger.info('processed: %d, failures: %d' % (upload.processed_calcs, upload.failed_calcs))
+
+    if upload.tasks_status != 'SUCCESS':
+        logger.error('something went wrong, errors: %s' % str(upload.errors))
+        # try to delete the unsuccessful upload
+        client.uploads.delete_upload(upload_id=upload.upload_id).response().result
+        return False
+    else:
+        logger.info("Upload completed")
+        return True
 
 
 def zipdir(path, ziph):
