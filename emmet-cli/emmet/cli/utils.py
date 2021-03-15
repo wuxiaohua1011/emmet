@@ -696,17 +696,12 @@ def nomad_upload_data(task_ids: List[str], username: str, password: str, gdrive_
 
 
     # zip the file
-    # zipped_upload_preparation_file_path = upload_preparation_dir.as_posix() + ".zip"
-    # zipf = ZipFile(zipped_upload_preparation_file_path, 'w')
-    # zipf.write(filename=json_file_path.as_posix(), arcname="nomad.json")
-    # for full_file_path, arcname in zip_file_paths:
-    #     zipf.write(filename=full_file_path, arcname=arcname)
-    # zipf.close()
-    # logger.info("NOMAD Zip prepared")
-    # print("NOMAD Zip prepared")
-    # # upload the zipped file
-    # with open(zipped_upload_preparation_file_path, 'rb') as f:
-    #     upload = client.uploads.upload(file=f, publish_directly=True).response().result
+    zipped_upload_preparation_file_path = upload_preparation_dir.as_posix() + ".zip"
+    zipf = ZipFile(zipped_upload_preparation_file_path, 'w', ZIP_DEFLATED)
+    zipdir(root_dir.as_posix(), zipf)
+    zipf.close()
+    logger.info("Zip file created")
+
 
     return True
 
