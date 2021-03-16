@@ -24,6 +24,7 @@ class PhaseDiagramError(Exception):
 >>>>>>> 9686c59 (updated error message)
 
 
+
 class DecompositionProduct(BaseModel):
     """
     Entry metadata for a decomposition process

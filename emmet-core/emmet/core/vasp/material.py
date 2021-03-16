@@ -55,8 +55,13 @@ class MaterialsDoc(CoreMaterialsDoc, StructureMetadata):
             quality_scores: quality scores for various calculation types
             use_statics: Use statics to define a material
         """
+<<<<<<< HEAD
         if len(task_group) == 0:
             raise Exception("Must have more than one task in the group.")
+=======
+        if task_group == 0:
+            raise Exception(f"Must have more than one task in the group.")
+>>>>>>> cada12a (changed pymatgen verion)
 
         # Material ID
         possible_mat_ids = [task.task_id for task in task_group]
@@ -85,6 +90,10 @@ class MaterialsDoc(CoreMaterialsDoc, StructureMetadata):
             else structure_optimizations
         )
 
+<<<<<<< HEAD
+=======
+
+>>>>>>> cada12a (changed pymatgen verion)
         def _structure_eval(task: TaskDocument):
             """
             Helper function to order structures optimziation and statics calcs by
