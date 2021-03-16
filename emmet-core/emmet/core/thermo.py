@@ -13,17 +13,12 @@ from emmet.core.material_property import PropertyDoc
 from emmet.core.mpid import MPID
 from emmet.core.structure import StructureMetadata
 
-<<<<<<< HEAD
-=======
 
 class PhaseDiagramError(Exception):
     """
     An exception class for Phase Diagram generation.
     """
     pass
->>>>>>> 9686c59 (updated error message)
-
-
 
 class DecompositionProduct(BaseModel):
     """
