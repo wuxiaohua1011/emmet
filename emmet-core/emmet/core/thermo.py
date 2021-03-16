@@ -13,6 +13,16 @@ from emmet.core.material_property import PropertyDoc
 from emmet.core.mpid import MPID
 from emmet.core.structure import StructureMetadata
 
+<<<<<<< HEAD
+=======
+
+class PhaseDiagramError(Exception):
+    """
+    An exception class for Phase Diagram generation.
+    """
+    pass
+>>>>>>> 9686c59 (updated error message)
+
 
 class DecompositionProduct(BaseModel):
     """
@@ -68,7 +78,7 @@ class ThermoDoc(PropertyDoc):
     equillibrium_reaction_energy_per_atom: float = Field(
         None,
         description="The reaction energy of a stable entry from the neighboring equilibrium stable materials in eV."
-        " Also known as the inverse distance to hull.",
+                    " Also known as the inverse distance to hull.",
     )
 
     decomposes_to: List[DecompositionProduct] = Field(
@@ -88,7 +98,7 @@ class ThermoDoc(PropertyDoc):
     entries: Dict[str, Union[ComputedEntry, ComputedStructureEntry]] = Field(
         ...,
         description="List of all entries that are valid for this material."
-        " The keys for this dictionary are names of various calculation types",
+                    " The keys for this dictionary are names of various calculation types",
     )
 
     @classmethod
@@ -104,7 +114,7 @@ class ThermoDoc(PropertyDoc):
             d = {
                 "material_id": e.entry_id,
                 "uncorrected_energy_per_atom": e.uncorrected_energy
-                / e.composition.num_atoms,
+                                               / e.composition.num_atoms,
                 "energy_per_atom": e.uncorrected_energy / e.composition.num_atoms,
                 "formation_energy_per_atom": pd.get_form_energy_per_atom(e),
                 "energy_above_hull": ehull,
