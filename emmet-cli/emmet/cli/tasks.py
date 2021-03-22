@@ -559,7 +559,7 @@ def parse(task_ids, nproc, store_volumetric_data):
     "--num-materials",
     required=False,
     default=1000,
-    type=click.IntRange(min=0, max=1000),
+    type=click.IntRange(min=0, max=99999),
     help="maximum number of materials to query"
 )
 def upload_latest(mongo_configfile, num_materials):
@@ -641,7 +641,7 @@ def upload_latest(mongo_configfile, num_materials):
     "--num",
     required=False,
     default=1000,
-    type=click.IntRange(min=0, max=1000),
+    type=click.IntRange(min=0, max=99999),
     help="maximum number of materials to upload"
 )
 @click.option(
