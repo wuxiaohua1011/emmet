@@ -359,9 +359,13 @@ def reconstruct_command(sbatch=False):
     return " ".join(command).strip().strip("\\")
 
 
+<<<<<<< HEAD
 
 def parse_vasp_dirs(vaspdirs, tag, task_ids, snl_metas):  # noqa: C901
 
+=======
+def parse_vasp_dirs(vaspdirs, tag, task_ids, snl_metas):  # noqa: C901
+>>>>>>> 6df6fab (fix linting issues)
     process = multiprocessing.current_process()
     name = process.name
     chunk_idx = int(name.rsplit("-")[1]) - 1
@@ -439,6 +443,7 @@ def parse_vasp_dirs(vaspdirs, tag, task_ids, snl_metas):  # noqa: C901
                 authors = snl_meta.get(
                     "authors", ["Materials Project <feedback@materialsproject.org>"]
                 )
+<<<<<<< HEAD
                 kwargs = {"projects": [tag]}
                 if references:
                     kwargs["references"] = references
@@ -457,6 +462,8 @@ def parse_vasp_dirs(vaspdirs, tag, task_ids, snl_metas):  # noqa: C901
             if snl_meta:
                 references = snl_meta.get("references")
                 authors = snl_meta.get("authors", ["Materials Project <feedback@materialsproject.org>"])
+=======
+>>>>>>> 6df6fab (fix linting issues)
                 kwargs = {"projects": [tag]}
                 if references:
                     kwargs["references"] = references
@@ -527,7 +534,10 @@ def parse_vasp_dirs(vaspdirs, tag, task_ids, snl_metas):  # noqa: C901
                         logger.info(
                             f"SNL {result.inserted_id} inserted into {snl_collection.full_name}."
                         )
+<<<<<<< HEAD
 
+=======
+>>>>>>> 6df6fab (fix linting issues)
 
                     shutil.rmtree(vaspdir)
                     logger.info(f"{name} Successfully parsed and removed {launcher}.")
