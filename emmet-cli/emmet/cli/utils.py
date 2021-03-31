@@ -620,12 +620,11 @@ def nomad_upload_data(task_ids: List[str], username: str, password: str, gdrive_
 
     raw = gdrive_mongo_store.query(criteria={"task_id": {"$in": task_ids}})
     records: List[GDriveLog] = [GDriveLog.parse_obj(record) for record in raw]
-    logger.info(f"Uploading the following tasks to NOMAD: \n{task_ids}")
+    # logger.info(f"Uploading the following tasks to NOMAD: \n{task_ids}")
 
     # organize_data
     nomad_json, untar_source_file_path_to_arcname_map = nomad_organize_data(task_ids=task_ids, records=records,
                                                                             root_dir=root_dir)
-
     # prepare upload data
     upload_preparation_dir = root_dir / Path(f"nomad_upload_{datetime.now().strftime('%m_%d_%Y')}")
     if not upload_preparation_dir.exists():
