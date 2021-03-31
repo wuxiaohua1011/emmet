@@ -632,7 +632,7 @@ def nomad_find_not_uploaded(gdrive_mongo_store: MongograntStore, num: int) -> Li
             size += file_size
         else:
             break
-    print(f"total size = {size}")
+    print(f"Found [{len(result)}] launchers with total size [{size}]")
     return result
 
 
