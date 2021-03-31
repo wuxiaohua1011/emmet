@@ -40,6 +40,7 @@ from keycloak import KeycloakOpenID
 from urllib.parse import urlparse
 import time
 from zipfile import ZipFile, ZIP_DEFLATED
+from tqdm import tqdm
 
 logger = logging.getLogger("emmet")
 perms = stat.S_IRUSR | stat.S_IWUSR | stat.S_IRGRP | stat.S_IWGRP
@@ -619,37 +620,11 @@ def nomad_upload_data(task_ids: List[str], username: str, password: str, gdrive_
 
     raw = gdrive_mongo_store.query(criteria={"task_id": {"$in": task_ids}})
     records: List[GDriveLog] = [GDriveLog.parse_obj(record) for record in raw]
-    # logger.info(f"Uploading the following tasks to NOMAD: \n{task_ids}")
-    # loop over records, generate json & pack into zip &
-    nomad_json: dict = {"comment": f"Materials Project Upload at {datetime.now()}",
-                        "external_db": "Materials Project",
-                        "entries": dict()}
-    # populate json
-    untar_source_file_path_to_arcname_map: List[
-        Tuple[str, str]] = list()  # list of (full_path/launcher-xyz.tar.gz launcher-xyz.tar.gz)
+    logger.info(f"Uploading the following tasks to NOMAD: \n{task_ids}")
 
-    for record in records:
-        full_path_without_suffix: Path = root_dir / record.path
-        full_file_path: Path = (root_dir / (record.path + ".tar.gz"))
-        if not full_file_path.exists():
-            record.error = f"Record can no longer be found in {full_file_path}"
-            logger.info(f"File not found: Record can no longer be found in {full_file_path}")
-        else:
-            my_tar = tarfile.open(full_file_path.as_posix(), "r")
-            file_names = my_tar.getnames()
-            vasp_run_names = [name for name in file_names if "vasprun" in name]
-            vasp_run_name = Path(vasp_run_names[0]).name
-            external_id = record.task_id
-            references = [f"https://materialsproject.org/tasks/{external_id}"]
-            entries: dict = nomad_json.get("entries")
-            # directory_index = full_path_without_suffix.as_posix().rfind("block")
-            # nomad_name = (Path((full_path_without_suffix.as_posix()[directory_index:])) / vasp_run_name).as_posix()
-            last_launcher_index = full_path_without_suffix.as_posix().rfind("launcher")
-            nomad_name = (Path(full_path_without_suffix.as_posix()[last_launcher_index:]) / vasp_run_name).as_posix()
-            entries[nomad_name] = {"external_id": external_id, "references": references}
-            last_launcher_index = full_file_path.as_posix().rfind("launcher")
-            untar_source_file_path_to_arcname_map.append(
-                (full_file_path.as_posix(), full_file_path.as_posix()[last_launcher_index:]))
+    # organize_data
+    nomad_json, untar_source_file_path_to_arcname_map = nomad_organize_data(task_ids=task_ids, records=records,
+                                                                            root_dir=root_dir)
 
     # prepare upload data
     upload_preparation_dir = root_dir / Path(f"nomad_upload_{datetime.now().strftime('%m_%d_%Y')}")
@@ -657,26 +632,11 @@ def nomad_upload_data(task_ids: List[str], username: str, password: str, gdrive_
         upload_preparation_dir.mkdir(parents=True, exist_ok=True)
 
     # write json data to file
-    # json_file_name = f"nomad_{datetime.now().strftime('%m_%d_%Y_%H_%M_%S')}.json"
-    json_file_name = f"nomad_{datetime.now().strftime('%m_%d_%Y')}.json"
-    json_file_path = upload_preparation_dir / json_file_name
-    with open(json_file_path.as_posix(), 'w') as outfile:
-        json.dump(nomad_json, outfile, indent=4)
-    logger.info("NOMAD JSON prepared")
+    write_json(upload_preparation_dir=upload_preparation_dir, nomad_json=nomad_json)
 
     # un-tar.gz the files
-    for full_file_path, arcname in untar_source_file_path_to_arcname_map:
-        tar = tarfile.open(full_file_path, "r:gz")
-        tar.extractall(path=upload_preparation_dir)
-        tar.close()
-    logger.info("Files un-tar.gz completed")
-
-    # zip the file
-    zipped_upload_preparation_file_path = upload_preparation_dir.as_posix() + ".zip"
-    zipf = ZipFile(zipped_upload_preparation_file_path, 'w', ZIP_DEFLATED)
-    zipdir(upload_preparation_dir.as_posix(), zipf)
-    zipf.close()
-    logger.info("Zip file created")
+    # write_zip_from_targz(upload_preparation_dir=upload_preparation_dir,
+    #                      untar_source_file_path_to_arcname_map=untar_source_file_path_to_arcname_map)
 
     # # upload to nomad
     # logger.info(f"Start Uploading [{zipped_upload_preparation_file_path}]"
@@ -712,6 +672,65 @@ def nomad_upload_data(task_ids: List[str], username: str, password: str, gdrive_
     #
     # return upload_completed
     return False
+
+
+def nomad_organize_data(task_ids, records, root_dir: Path):
+    # loop over records, generate json & pack into zip &
+    nomad_json: dict = {"comment": f"Materials Project Upload at {datetime.now()}",
+                        "external_db": "Materials Project",
+                        "entries": dict()}
+    # populate json
+    untar_source_file_path_to_arcname_map: List[
+        Tuple[str, str]] = list()  # list of (full_path/launcher-xyz.tar.gz launcher-xyz.tar.gz)
+    logger.info(f"Organizing {len(task_ids)} launchers")
+    for record in tqdm(records):
+        full_path_without_suffix: Path = root_dir / record.path
+        full_file_path: Path = (root_dir / (record.path + ".tar.gz"))
+        if not full_file_path.exists():
+            record.error = f"Record can no longer be found in {full_file_path}"
+            logger.info(f"File not found: Record can no longer be found in {full_file_path}")
+        else:
+            my_tar = tarfile.open(full_file_path.as_posix(), "r")
+            file_names = my_tar.getnames()
+            vasp_run_names = [name for name in file_names if "vasprun" in name]
+            vasp_run_name = Path(vasp_run_names[0]).name
+            external_id = record.task_id
+            references = [f"https://materialsproject.org/tasks/{external_id}"]
+            entries: dict = nomad_json.get("entries")
+            # directory_index = full_path_without_suffix.as_posix().rfind("block")
+            # nomad_name = (Path((full_path_without_suffix.as_posix()[directory_index:])) / vasp_run_name).as_posix()
+            last_launcher_index = full_path_without_suffix.as_posix().rfind("launcher")
+            nomad_name = (Path(full_path_without_suffix.as_posix()[last_launcher_index:]) / vasp_run_name).as_posix()
+            entries[nomad_name] = {"external_id": external_id, "references": references}
+            last_launcher_index = full_file_path.as_posix().rfind("launcher")
+            untar_source_file_path_to_arcname_map.append(
+                (full_file_path.as_posix(), full_file_path.as_posix()[last_launcher_index:]))
+    return nomad_json, untar_source_file_path_to_arcname_map
+
+
+def write_zip_from_targz(untar_source_file_path_to_arcname_map, upload_preparation_dir):
+    for full_file_path, arcname in untar_source_file_path_to_arcname_map:
+        tar = tarfile.open(full_file_path, "r:gz")
+        tar.extractall(path=upload_preparation_dir)
+        tar.close()
+    logger.info("Files un-tar.gz completed")
+
+    # zip the file
+    zipped_upload_preparation_file_path = upload_preparation_dir.as_posix() + ".zip"
+    zipf = ZipFile(zipped_upload_preparation_file_path, 'w', ZIP_DEFLATED)
+    zipdir(upload_preparation_dir.as_posix(), zipf)
+    zipf.close()
+    logger.info("Zip file created")
+
+
+def write_json(upload_preparation_dir, nomad_json):
+    # json_file_name = f"nomad_{datetime.now().strftime('%m_%d_%Y_%H_%M_%S')}.json"
+    json_file_name = f"nomad_{datetime.now().strftime('%m_%d_%Y')}.json"
+    json_file_path = upload_preparation_dir / json_file_name
+    with open(json_file_path.as_posix(), 'w') as outfile:
+        json.dump(nomad_json, outfile, indent=4)
+    logger.info("NOMAD JSON prepared")
+
 
 def zipdir(path, ziph):
     # ziph is zipfile handle
