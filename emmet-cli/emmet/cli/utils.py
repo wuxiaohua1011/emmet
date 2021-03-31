@@ -648,7 +648,6 @@ def nomad_upload_data(task_ids: List[str], username: str, password: str, gdrive_
     :param root_dir:
     :return:
     """
-    logger.info(f"Starting to upload [{task_ids}] to NOMAD")
     # create the bravado client
     nomad_url = 'http://nomad-lab.eu/prod/rae/mp/api'
     http_client = RequestsClient()
