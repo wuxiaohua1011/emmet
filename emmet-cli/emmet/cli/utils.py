@@ -636,31 +636,31 @@ def nomad_upload_data(task_ids: List[str], username: str, password: str, gdrive_
     write_zip_from_targz(upload_preparation_dir=upload_preparation_dir,
                          untar_source_file_path_to_arcname_map=untar_source_file_path_to_arcname_map)
 
-    # # upload to nomad
-    # logger.info(f"Start Uploading [{zipped_upload_preparation_file_path}]"
-    #             f"[{os.path.getsize(zipped_upload_preparation_file_path)} bytes] to NOMAD")
-    # with open(zipped_upload_preparation_file_path, 'rb') as f:
-    #     upload = client.uploads.upload(file=f, publish_directly=True).response().result
-    #
-    # while upload.tasks_running:
-    #     upload = client.uploads.get_upload(upload_id=upload.upload_id).response().result
-    #     time.sleep(5)
-    #     logger.info('processed: %d, failures: %d' % (upload.processed_calcs, upload.failed_calcs))
-    #
-    # if upload.tasks_status != 'SUCCESS':
-    #     logger.error('something went wrong, errors: %s' % str(upload.errors))
-    #     # try to delete the unsuccessful upload
-    #     client.uploads.delete_upload(upload_id=upload.upload_id).response().result
-    #     upload_completed = False
-    # else:
-    #     logger.info("Upload completed")
-    #     upload_completed = True
-    #
-    # # update mongo store
-    # for record in records:
-    #     record.nomad_updated = datetime.now()
-    #     record.nomad_upload_id = upload.upload_id
-    # gdrive_mongo_store.update(docs=[record.dict() for record in records], key="task_id")
+    # upload to nomad
+    logger.info(f"Start Uploading [{zipped_upload_preparation_file_path}]"
+                f"[{os.path.getsize(zipped_upload_preparation_file_path)} bytes] to NOMAD")
+    with open(zipped_upload_preparation_file_path, 'rb') as f:
+        upload = client.uploads.upload(file=f, publish_directly=True).response().result
+
+    while upload.tasks_running:
+        upload = client.uploads.get_upload(upload_id=upload.upload_id).response().result
+        time.sleep(5)
+        logger.info('processed: %d, failures: %d' % (upload.processed_calcs, upload.failed_calcs))
+
+    if upload.tasks_status != 'SUCCESS':
+        logger.error('something went wrong, errors: %s' % str(upload.errors))
+        # try to delete the unsuccessful upload
+        client.uploads.delete_upload(upload_id=upload.upload_id).response().result
+        upload_completed = False
+    else:
+        logger.info("Upload completed")
+        upload_completed = True
+
+    # update mongo store
+    for record in records:
+        record.nomad_updated = datetime.now()
+        record.nomad_upload_id = upload.upload_id
+    gdrive_mongo_store.update(docs=[record.dict() for record in records], key="task_id")
     #
     # # clean up
     # if upload_preparation_dir.exists():
@@ -724,6 +724,7 @@ def write_zip_from_targz(untar_source_file_path_to_arcname_map, upload_preparati
     zipf.close()
     logger.info(f"[{len(untar_source_file_path_to_arcname_map)}] files un-tar and zipped")
 
+
 def write_json(upload_preparation_dir, nomad_json):
     # json_file_name = f"nomad_{datetime.now().strftime('%m_%d_%Y_%H_%M_%S')}.json"
     json_file_name = f"nomad_{datetime.now().strftime('%m_%d_%Y')}.json"
@@ -731,8 +732,6 @@ def write_json(upload_preparation_dir, nomad_json):
     with open(json_file_path.as_posix(), 'w') as outfile:
         json.dump(nomad_json, outfile, indent=4)
     logger.info("NOMAD JSON prepared")
-
-
 
 
 def nomad_upload_helper(client, file):
