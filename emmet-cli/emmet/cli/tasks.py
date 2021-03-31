@@ -735,10 +735,10 @@ def upload_to_nomad(nomad_configfile, num, mongo_configfile):
         # find the earliest n tasks that has not been uploaded
         task_ids_not_uploaded: List[str] = nomad_find_not_uploaded(num=num, gdrive_mongo_store=gdrive_mongo_store)
         # upload those n tasks
-        status: bool = nomad_upload_data(task_ids=task_ids_not_uploaded,
-                                               username=username, password=password,
-                                               gdrive_mongo_store=gdrive_mongo_store,
-                                               root_dir=full_root_dir / "tmp_storage")
+        # status: bool = nomad_upload_data(task_ids=task_ids_not_uploaded,
+        #                                        username=username, password=password,
+        #                                        gdrive_mongo_store=gdrive_mongo_store,
+        #                                        root_dir=full_root_dir / "tmp_storage")
 
         gdrive_mongo_store.close()
     else:
