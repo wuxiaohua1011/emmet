@@ -729,9 +729,6 @@ def upload_to_nomad(nomad_configfile, num, mongo_configfile):
         gdrive_mongo_store.connect()
         if not full_nomad_config_path.exists():
             raise FileNotFoundError(f"Nomad Config file not found in {full_nomad_config_path}")
-        cred: dict = json.load(full_nomad_config_path.open('r'))
-        username: str = cred["username"]
-        password: str = cred["password"]
         # find the earliest n tasks that has not been uploaded
         task_ids_not_uploaded: List[str] = nomad_find_not_uploaded(num=num, gdrive_mongo_store=gdrive_mongo_store)
         # upload those n tasks
