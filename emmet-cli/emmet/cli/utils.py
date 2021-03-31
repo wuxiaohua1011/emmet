@@ -759,8 +759,7 @@ def write_zip_from_targz(untar_source_file_path_to_arcname_map, upload_preparati
             zipf.write(os.path.join(root, file), os.path.relpath(os.path.join(root, file),
                                                                  os.path.join(upload_preparation_dir, '..')))
     zipf.close()
-    logger.info("Zip file created")
-
+    logger.info(f"[{len(untar_source_file_path_to_arcname_map)}] files un-tar and zipped")
 
 def write_json(upload_preparation_dir, nomad_json):
     # json_file_name = f"nomad_{datetime.now().strftime('%m_%d_%Y_%H_%M_%S')}.json"
