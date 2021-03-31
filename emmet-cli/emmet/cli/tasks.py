@@ -17,7 +17,8 @@ from emmet.cli.utils import VaspDirsGenerator, EmmetCliError, ReturnCodes
 from emmet.cli.utils import ensure_indexes, get_subdir, parse_vasp_dirs, find_all_launcher_paths
 from emmet.cli.utils import chunks, iterator_slice
 from emmet.cli.decorators import sbatch
-from emmet.cli.utils import compress_launchers, log_to_mongodb, move_dir, GDriveLog, nomad_upload_data, nomad_find_not_uploaded, find_unuploaded_launcher_paths
+from emmet.cli.utils import compress_launchers, log_to_mongodb, move_dir, GDriveLog, nomad_upload_data, \
+    nomad_find_not_uploaded, find_unuploaded_launcher_paths
 
 import datetime
 from typing import List, Dict
@@ -631,9 +632,10 @@ def upload_latest(mongo_configfile, num_materials):
             base_cmds = ["emmet", "--run", "--yes", "--issue", "87", "tasks", "-d", full_root_dir.as_posix()]
 
             # find all un-uploaded launchers
-            task_records: List[GDriveLog] = find_unuploaded_launcher_paths(outputfile=full_emmet_input_file_path.as_posix(),
-                                                                           configfile=full_mongo_config_path.as_posix(),
-                                                                           num=num_materials)
+            task_records: List[GDriveLog] = find_unuploaded_launcher_paths(
+                outputfile=full_emmet_input_file_path.as_posix(),
+                configfile=full_mongo_config_path.as_posix(),
+                num=num_materials)
 
             # restore
             restore_dir = (full_root_dir / "restore")
@@ -672,7 +674,7 @@ def upload_latest(mongo_configfile, num_materials):
 
             # run clean up command
             # DANGEROUS!!
-            remove_raw = ["rclone", "purge", f"{(full_root_dir/'raw').as_posix()}"]
+            remove_raw = ["rclone", "purge", f"{(full_root_dir / 'raw').as_posix()}"]
             run_and_log_info(args=remove_raw)
 
             remove_restore = ["rclone", "purge", f"{restore_dir.as_posix()}"]
@@ -683,6 +685,7 @@ def upload_latest(mongo_configfile, num_materials):
     else:
         logger.info("Run flag not supplied...")
     return ReturnCodes.SUCCESS
+
 
 @tasks.command()
 @sbatch
@@ -729,13 +732,16 @@ def upload_to_nomad(nomad_configfile, num, mongo_configfile):
         gdrive_mongo_store.connect()
         if not full_nomad_config_path.exists():
             raise FileNotFoundError(f"Nomad Config file not found in {full_nomad_config_path}")
+        cred: dict = json.load(full_nomad_config_path.open('r'))
+        username: str = cred["username"]
+        password: str = cred["password"]
         # find the earliest n tasks that has not been uploaded
         task_ids_not_uploaded: List[str] = nomad_find_not_uploaded(num=num, gdrive_mongo_store=gdrive_mongo_store)
         # upload those n tasks
-        # status: bool = nomad_upload_data(task_ids=task_ids_not_uploaded,
-        #                                        username=username, password=password,
-        #                                        gdrive_mongo_store=gdrive_mongo_store,
-        #                                        root_dir=full_root_dir / "tmp_storage")
+        status: bool = nomad_upload_data(task_ids=task_ids_not_uploaded,
+                                         username=username, password=password,
+                                         gdrive_mongo_store=gdrive_mongo_store,
+                                         root_dir=full_root_dir / "tmp_storage")
 
         gdrive_mongo_store.close()
     else:
@@ -750,6 +756,3 @@ def run_and_log_info(args, filelist=None):
     run_outputs = run_command(args=args, filelist=filelist)
     for run_output in run_outputs:
         logger.info(run_output.strip())
-
-
-
