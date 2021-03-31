@@ -712,13 +712,12 @@ def write_zip_from_targz(untar_source_file_path_to_arcname_map, upload_preparati
         tar = tarfile.open(full_file_path, "r:gz")
         tar.extractall(path=upload_preparation_dir)
         tar.close()
-    logger.info("Files un-tar.gz completed")
 
     # zip the file
+    logger.info("Zipping files")
     zipped_upload_preparation_file_path = upload_preparation_dir.as_posix() + ".zip"
     zipf = ZipFile(zipped_upload_preparation_file_path, 'w', ZIP_DEFLATED)
-
-    for root, dirs, files in os.walk(upload_preparation_dir.as_posix()):
+    for root, dirs, files in tqdm(os.walk(upload_preparation_dir.as_posix())):
         for file in files:
             zipf.write(os.path.join(root, file), os.path.relpath(os.path.join(root, file),
                                                                  os.path.join(upload_preparation_dir, '..')))
