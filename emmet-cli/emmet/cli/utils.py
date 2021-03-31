@@ -553,9 +553,11 @@ def move_dir(src: str, dst: str, pattern: str):
             logger.info("not moving this directory because it already existed for some reason.")
 
 
-def nomad_find_not_uploaded(gdrive_mongo_store: MongograntStore, username: str, password: str, num: int) -> List[str]:
+def nomad_find_not_uploaded(gdrive_mongo_store: MongograntStore, num: int) -> List[str]:
     """
     1. find a list of tasks that are not uploaded to nomad, sort ascending based on date created. limit by num
+
+    if num < 0, return 32 GB worth of materials
 
     :param gdrive_mongo_store:
     :param username:
@@ -568,12 +570,19 @@ def nomad_find_not_uploaded(gdrive_mongo_store: MongograntStore, username: str, 
         sort={"last_updated": Sort.Descending},
         limit=max_num)
     """
-    raw = gdrive_mongo_store.query(
-        criteria={"$and": [{"nomad_updated": None}, {"error": None}]},
-        properties={"task_id": 1, "file_size": 1},
-        sort={"last_updated": Sort.Ascending},
-        limit=num
-    )
+    if num >= 0:
+        raw = gdrive_mongo_store.query(
+            criteria={"$and": [{"nomad_updated": None}, {"error": None}]},
+            properties={"task_id": 1, "file_size": 1},
+            sort={"last_updated": Sort.Ascending},
+            limit=num
+        )
+    else:
+        raw = gdrive_mongo_store.query(
+            criteria={"$and": [{"nomad_updated": None}, {"error": None}]},
+            properties={"task_id": 1, "file_size": 1},
+            sort={"last_updated": Sort.Ascending}
+        )
     max_nomad_upload_size = 32 * 1e9  # 32 gb
     size = 0
     result: List[str] = []
@@ -584,6 +593,7 @@ def nomad_find_not_uploaded(gdrive_mongo_store: MongograntStore, username: str, 
             result.append(task_id)
         else:
             break
+    print(f"total size = {size}")
     return result
 
 
@@ -667,39 +677,40 @@ def nomad_upload_data(task_ids: List[str], username: str, password: str, gdrive_
     zipf.close()
     logger.info("Zip file created")
 
-    # upload to nomad
-    logger.info(f"Start Uploading [{zipped_upload_preparation_file_path}]"
-                f"[{os.path.getsize(zipped_upload_preparation_file_path)} bytes] to NOMAD")
-    with open(zipped_upload_preparation_file_path, 'rb') as f:
-        upload = client.uploads.upload(file=f, publish_directly=True).response().result
-
-    while upload.tasks_running:
-        upload = client.uploads.get_upload(upload_id=upload.upload_id).response().result
-        time.sleep(5)
-        logger.info('processed: %d, failures: %d' % (upload.processed_calcs, upload.failed_calcs))
-
-    if upload.tasks_status != 'SUCCESS':
-        logger.error('something went wrong, errors: %s' % str(upload.errors))
-        # try to delete the unsuccessful upload
-        client.uploads.delete_upload(upload_id=upload.upload_id).response().result
-        upload_completed = False
-    else:
-        logger.info("Upload completed")
-        upload_completed = True
-
-    # update mongo store
-    for record in records:
-        record.nomad_updated = datetime.now()
-        record.nomad_upload_id = upload.upload_id
-    gdrive_mongo_store.update(docs=[record.dict() for record in records], key="task_id")
-
-    # clean up
-    if upload_preparation_dir.exists():
-        shutil.rmtree(upload_preparation_dir.as_posix())
-    if Path(zipped_upload_preparation_file_path).exists():
-        os.remove(zipped_upload_preparation_file_path)
-
-    return upload_completed
+    # # upload to nomad
+    # logger.info(f"Start Uploading [{zipped_upload_preparation_file_path}]"
+    #             f"[{os.path.getsize(zipped_upload_preparation_file_path)} bytes] to NOMAD")
+    # with open(zipped_upload_preparation_file_path, 'rb') as f:
+    #     upload = client.uploads.upload(file=f, publish_directly=True).response().result
+    #
+    # while upload.tasks_running:
+    #     upload = client.uploads.get_upload(upload_id=upload.upload_id).response().result
+    #     time.sleep(5)
+    #     logger.info('processed: %d, failures: %d' % (upload.processed_calcs, upload.failed_calcs))
+    #
+    # if upload.tasks_status != 'SUCCESS':
+    #     logger.error('something went wrong, errors: %s' % str(upload.errors))
+    #     # try to delete the unsuccessful upload
+    #     client.uploads.delete_upload(upload_id=upload.upload_id).response().result
+    #     upload_completed = False
+    # else:
+    #     logger.info("Upload completed")
+    #     upload_completed = True
+    #
+    # # update mongo store
+    # for record in records:
+    #     record.nomad_updated = datetime.now()
+    #     record.nomad_upload_id = upload.upload_id
+    # gdrive_mongo_store.update(docs=[record.dict() for record in records], key="task_id")
+    #
+    # # clean up
+    # if upload_preparation_dir.exists():
+    #     shutil.rmtree(upload_preparation_dir.as_posix())
+    # if Path(zipped_upload_preparation_file_path).exists():
+    #     os.remove(zipped_upload_preparation_file_path)
+    #
+    # return upload_completed
+    return False
 
 def zipdir(path, ziph):
     # ziph is zipfile handle
