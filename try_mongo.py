@@ -3,6 +3,7 @@ from maggma.stores.advanced_stores import Sort
 from typing import List
 from pathlib import Path
 
+
 def nomad_find_not_uploaded(gdrive_mongo_store: MongograntStore, num: int) -> List[str]:
     """
     1. find a list of tasks that are not uploaded to nomad, sort ascending based on date created. limit by num
@@ -45,6 +46,20 @@ def nomad_find_not_uploaded(gdrive_mongo_store: MongograntStore, num: int) -> Li
     print(f"total size = {size}")
     return result
 
+
+def clear_uploaded_fields(mongo_store: MongograntStore):
+    cursor = mongo_store.query(criteria=
+        {"nomad_updated": {"$ne": None}}
+    )
+    new_objs = []
+    for obj in cursor:
+        obj["nomad_updated"] = None
+        obj["nomad_upload_id"] = None
+        new_objs.append(obj)
+    mongo_store.update(docs=new_objs, key="task_id")
+    print("updated")
+
+
 if __name__ == "__main__":
     gdrive_mongo_store = MongograntStore(mongogrant_spec="rw:knowhere.lbl.gov/mp_core_mwu",
                                          collection_name="gdrive")
@@ -53,4 +68,4 @@ if __name__ == "__main__":
         "nomad_upload_id": {"$ne": None}
     }
     count = gdrive_mongo_store.count(criteria=nomad_upload_query)
-    nomad_find_not_uploaded(gdrive_mongo_store=gdrive_mongo_store, num=-1)
+    clear_uploaded_fields(gdrive_mongo_store)
