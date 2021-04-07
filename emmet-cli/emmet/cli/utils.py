@@ -739,7 +739,7 @@ def nomad_organize_data(task_ids, records, root_dir: Path, upload_preparation_di
             # directory_index = full_path_without_suffix.as_posix().rfind("block")
             # nomad_name = (Path((full_path_without_suffix.as_posix()[directory_index:])) / vasp_run_name).as_posix()
             last_launcher_index = full_path_without_suffix.as_posix().rfind("launcher")
-            nomad_name = (upload_preparation_dir /
+            nomad_name = (upload_preparation_dir.name /
                           Path(full_path_without_suffix.as_posix()[last_launcher_index:]) / vasp_run_name).as_posix()
             entries[nomad_name] = {"external_id": external_id, "references": references}
             last_launcher_index = full_file_path.as_posix().rfind("launcher")
