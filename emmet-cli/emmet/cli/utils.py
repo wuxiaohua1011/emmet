@@ -673,9 +673,9 @@ def nomad_upload_data(task_ids: List[str], username: str, password: str, gdrive_
     write_json(upload_preparation_dir=upload_preparation_dir, nomad_json=nomad_json)
 
     # un-tar.gz the files
-    zipped_upload_preparation_file_path = write_zip_from_targz(upload_preparation_dir=upload_preparation_dir,
-                                                               untar_source_file_path_to_arcname_map=
-                                                               untar_source_file_path_to_arcname_map)
+    # zipped_upload_preparation_file_path = write_zip_from_targz(upload_preparation_dir=upload_preparation_dir,
+    #                                                            untar_source_file_path_to_arcname_map=
+    #                                                            untar_source_file_path_to_arcname_map)
     #
     # # upload to nomad
     # logger.info(f"Start Uploading [{zipped_upload_preparation_file_path}]"
@@ -739,13 +739,14 @@ def nomad_organize_data(task_ids, records, root_dir: Path, upload_preparation_di
             block_index = full_path_without_suffix.as_posix().rfind("block")
             nomad_name = (upload_preparation_dir.name /
                           Path((full_path_without_suffix.as_posix()[block_index:])) / vasp_run_name).as_posix()
-            # last_launcher_index = full_path_without_suffix.as_posix().rfind("launcher")
+            first_launcher_index = full_path_without_suffix.as_posix().find("launcher")
             # nomad_name = (upload_preparation_dir.name /
             #               Path(full_path_without_suffix.as_posix()[last_launcher_index:]) / vasp_run_name).as_posix()
             entries[nomad_name] = {"external_id": external_id, "references": references}
             # last_launcher_index = full_file_path.as_posix().rfind("launcher")
             untar_source_file_path_to_arcname_map.append(
-                (full_file_path.as_posix(), full_file_path.as_posix()[block_index:]))
+                (full_file_path.as_posix(), full_file_path.as_posix()[block_index:first_launcher_index-1]))
+        print(untar_source_file_path_to_arcname_map)
     return nomad_json, untar_source_file_path_to_arcname_map
 
 
