@@ -673,9 +673,9 @@ def nomad_upload_data(task_ids: List[str], username: str, password: str, gdrive_
     write_json(upload_preparation_dir=upload_preparation_dir, nomad_json=nomad_json)
 
     # un-tar.gz the files
-    # zipped_upload_preparation_file_path = write_zip_from_targz(upload_preparation_dir=upload_preparation_dir,
-    #                                                            untar_source_file_path_to_arcname_map=
-    #                                                            untar_source_file_path_to_arcname_map)
+    zipped_upload_preparation_file_path = write_zip_from_targz(upload_preparation_dir=upload_preparation_dir,
+                                                               untar_source_file_path_to_arcname_map=
+                                                               untar_source_file_path_to_arcname_map)
     #
     # # upload to nomad
     # logger.info(f"Start Uploading [{zipped_upload_preparation_file_path}]"
@@ -746,16 +746,14 @@ def nomad_organize_data(task_ids, records, root_dir: Path, upload_preparation_di
             # last_launcher_index = full_file_path.as_posix().rfind("launcher")
             untar_source_file_path_to_arcname_map.append(
                 (full_file_path.as_posix(), full_file_path.as_posix()[block_index:first_launcher_index-1]))
-        print(untar_source_file_path_to_arcname_map)
     return nomad_json, untar_source_file_path_to_arcname_map
 
 
 def write_zip_from_targz(untar_source_file_path_to_arcname_map, upload_preparation_dir: Path):
     logger.info("Extracting Files")
-    for full_file_path, arcname in tqdm(untar_source_file_path_to_arcname_map):
+    for full_file_path, block_name in tqdm(untar_source_file_path_to_arcname_map):
         tar = tarfile.open(full_file_path, "r:gz")
-        path = upload_preparation_dir / Path(full_file_path).parent
-        tar.extractall(path=upload_preparation_dir / "my_dir")
+        tar.extractall(path=upload_preparation_dir / block_name)
         tar.close()
 
     # # zip the file
