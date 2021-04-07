@@ -658,13 +658,16 @@ def nomad_upload_data(task_ids: List[str], username: str, password: str, gdrive_
     records: List[GDriveLog] = [GDriveLog.parse_obj(record) for record in raw]
     # logger.info(f"Uploading the following tasks to NOMAD: \n{task_ids}")
 
-    # organize_data
-    nomad_json, untar_source_file_path_to_arcname_map = nomad_organize_data(task_ids=task_ids, records=records,
-                                                                            root_dir=root_dir)
     # prepare upload data
     upload_preparation_dir = root_dir / Path(f"nomad_upload_{datetime.now().strftime('%m_%d_%Y')}")
     if not upload_preparation_dir.exists():
         upload_preparation_dir.mkdir(parents=True, exist_ok=True)
+
+    # organize_data
+    nomad_json, untar_source_file_path_to_arcname_map = nomad_organize_data(task_ids=task_ids, records=records,
+                                                                            root_dir=root_dir,
+                                                                            upload_preparation_dir=
+                                                                                upload_preparation_dir)
 
     # write json data to file
     write_json(upload_preparation_dir=upload_preparation_dir, nomad_json=nomad_json)
@@ -710,7 +713,7 @@ def nomad_upload_data(task_ids: List[str], username: str, password: str, gdrive_
     # return False
 
 
-def nomad_organize_data(task_ids, records, root_dir: Path):
+def nomad_organize_data(task_ids, records, root_dir: Path, upload_preparation_dir:Path):
     # loop over records, generate json & pack into zip &
     nomad_json: dict = {"comment": f"Materials Project Upload at {datetime.now()}",
                         "external_db": "Materials Project",
@@ -736,7 +739,8 @@ def nomad_organize_data(task_ids, records, root_dir: Path):
             # directory_index = full_path_without_suffix.as_posix().rfind("block")
             # nomad_name = (Path((full_path_without_suffix.as_posix()[directory_index:])) / vasp_run_name).as_posix()
             last_launcher_index = full_path_without_suffix.as_posix().rfind("launcher")
-            nomad_name = (Path(full_path_without_suffix.as_posix()[last_launcher_index:]) / vasp_run_name).as_posix()
+            nomad_name = (upload_preparation_dir /
+                          Path(full_path_without_suffix.as_posix()[last_launcher_index:]) / vasp_run_name).as_posix()
             entries[nomad_name] = {"external_id": external_id, "references": references}
             last_launcher_index = full_file_path.as_posix().rfind("launcher")
             untar_source_file_path_to_arcname_map.append(
