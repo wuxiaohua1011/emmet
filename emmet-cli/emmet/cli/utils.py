@@ -741,6 +741,8 @@ def nomad_organize_data(task_ids, records, root_dir: Path):
             last_launcher_index = full_file_path.as_posix().rfind("launcher")
             untar_source_file_path_to_arcname_map.append(
                 (full_file_path.as_posix(), full_file_path.as_posix()[last_launcher_index:]))
+    from pprint import pprint
+    pprint(nomad_json)
     return nomad_json, untar_source_file_path_to_arcname_map
 
 
