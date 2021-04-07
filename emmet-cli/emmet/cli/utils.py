@@ -639,40 +639,40 @@ def nomad_upload_data(task_ids: List[str], username: str, password: str, gdrive_
     zipped_upload_preparation_file_path = write_zip_from_targz(upload_preparation_dir=upload_preparation_dir,
                                                                untar_source_file_path_to_arcname_map=
                                                                untar_source_file_path_to_arcname_map)
-    #
-    # # upload to nomad
-    # logger.info(f"Start Uploading [{zipped_upload_preparation_file_path}]"
-    #             f"[{os.path.getsize(zipped_upload_preparation_file_path)} bytes] to NOMAD")
-    # with open(zipped_upload_preparation_file_path, 'rb') as f:
-    #     upload = client.uploads.upload(file=f, publish_directly=True).response().result
-    #
-    # while upload.tasks_running:
-    #     upload = client.uploads.get_upload(upload_id=upload.upload_id).response().result
-    #     time.sleep(5)
-    #     logger.info('processed: %d, failures: %d' % (upload.processed_calcs, upload.failed_calcs))
-    #
-    # if upload.tasks_status != 'SUCCESS':
-    #     logger.error('something went wrong, errors: %s' % str(upload.errors))
-    #     # try to delete the unsuccessful upload
-    #     client.uploads.delete_upload(upload_id=upload.upload_id).response().result
-    #     upload_completed = False
-    # else:
-    #     logger.info("Upload completed")
-    #     upload_completed = True
-    #
-    # # update mongo store
-    # for record in records:
-    #     record.nomad_updated = datetime.now()
-    #     record.nomad_upload_id = upload.upload_id
-    # gdrive_mongo_store.update(docs=[record.dict() for record in records], key="task_id")
 
-    # # clean up
-    # if upload_preparation_dir.exists():
-    #     shutil.rmtree(upload_preparation_dir.as_posix())
-    # if Path(zipped_upload_preparation_file_path).exists():
-    #     os.remove(zipped_upload_preparation_file_path)
+    # upload to nomad
+    logger.info(f"Start Uploading [{zipped_upload_preparation_file_path}]"
+                f"[{os.path.getsize(zipped_upload_preparation_file_path)} bytes] to NOMAD")
+    with open(zipped_upload_preparation_file_path, 'rb') as f:
+        upload = client.uploads.upload(file=f, publish_directly=True).response().result
 
-    # return upload_completed
+    while upload.tasks_running:
+        upload = client.uploads.get_upload(upload_id=upload.upload_id).response().result
+        time.sleep(5)
+        logger.info('processed: %d, failures: %d' % (upload.processed_calcs, upload.failed_calcs))
+
+    if upload.tasks_status != 'SUCCESS':
+        logger.error('something went wrong, errors: %s' % str(upload.errors))
+        # try to delete the unsuccessful upload
+        client.uploads.delete_upload(upload_id=upload.upload_id).response().result
+        upload_completed = False
+    else:
+        logger.info("Upload completed")
+        upload_completed = True
+
+    # update mongo store
+    for record in records:
+        record.nomad_updated = datetime.now()
+        record.nomad_upload_id = upload.upload_id
+    gdrive_mongo_store.update(docs=[record.dict() for record in records], key="task_id")
+
+    # clean up
+    if upload_preparation_dir.exists():
+        shutil.rmtree(upload_preparation_dir.as_posix())
+    if Path(zipped_upload_preparation_file_path).exists():
+        os.remove(zipped_upload_preparation_file_path)
+
+    return upload_completed
     # return False
 
 
@@ -725,8 +725,9 @@ def write_zip_from_targz(untar_source_file_path_to_arcname_map, upload_preparati
     zipf = ZipFile(zipped_upload_preparation_file_path, 'w', ZIP_DEFLATED)
     for root, dirs, files in tqdm(os.walk(upload_preparation_dir.as_posix())):
         for file in files:
-            zipf.write(os.path.join(root, file), os.path.relpath(os.path.join(root, file),
-                                                                 os.path.join(upload_preparation_dir, '..')))
+            zipf.write(os.path.join(root, file),
+                       os.path.relpath(os.path.join(root, file),
+                                       os.path.join(upload_preparation_dir, '..')))
     zipf.close()
     logger.info(f"[{len(untar_source_file_path_to_arcname_map)}] files un-tar and zipped")
     return zipped_upload_preparation_file_path
