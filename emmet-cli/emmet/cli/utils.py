@@ -712,12 +712,12 @@ def nomad_organize_data(task_ids, records, root_dir: Path, upload_preparation_di
     return nomad_json, untar_source_file_path_to_arcname_map
 
 
-def write_zip_from_targz(untar_source_file_path_to_arcname_map, upload_preparation_dir):
+def write_zip_from_targz(untar_source_file_path_to_arcname_map, upload_preparation_dir: Path):
     logger.info("Extracting Files")
     for full_file_path, arcname in tqdm(untar_source_file_path_to_arcname_map):
-        print(full_file_path, arcname)
         tar = tarfile.open(full_file_path, "r:gz")
-        tar.extractall(path=upload_preparation_dir)
+        path = upload_preparation_dir / arcname.parent
+        tar.extractall(path=path)
         tar.close()
 
     # # zip the file
