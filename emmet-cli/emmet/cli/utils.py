@@ -716,7 +716,7 @@ def write_zip_from_targz(untar_source_file_path_to_arcname_map, upload_preparati
     logger.info("Extracting Files")
     for full_file_path, arcname in tqdm(untar_source_file_path_to_arcname_map):
         tar = tarfile.open(full_file_path, "r:gz")
-        path = upload_preparation_dir / arcname.parent
+        path = upload_preparation_dir / Path(full_file_path).parent
         tar.extractall(path=path)
         tar.close()
 
