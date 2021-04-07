@@ -719,17 +719,17 @@ def write_zip_from_targz(untar_source_file_path_to_arcname_map, upload_preparati
         tar.extractall(path=upload_preparation_dir / block_name)
         tar.close()
 
-    # # zip the file
-    # logger.info("Zipping files")
-    # zipped_upload_preparation_file_path = upload_preparation_dir.as_posix() + ".zip"
-    # zipf = ZipFile(zipped_upload_preparation_file_path, 'w', ZIP_DEFLATED)
-    # for root, dirs, files in tqdm(os.walk(upload_preparation_dir.as_posix())):
-    #     for file in files:
-    #         zipf.write(os.path.join(root, file), os.path.relpath(os.path.join(root, file),
-    #                                                              os.path.join(upload_preparation_dir, '..')))
-    # zipf.close()
-    # logger.info(f"[{len(untar_source_file_path_to_arcname_map)}] files un-tar and zipped")
-    # return zipped_upload_preparation_file_path
+    # zip the file
+    logger.info("Zipping files")
+    zipped_upload_preparation_file_path = upload_preparation_dir.as_posix() + ".zip"
+    zipf = ZipFile(zipped_upload_preparation_file_path, 'w', ZIP_DEFLATED)
+    for root, dirs, files in tqdm(os.walk(upload_preparation_dir.as_posix())):
+        for file in files:
+            zipf.write(os.path.join(root, file), os.path.relpath(os.path.join(root, file),
+                                                                 os.path.join(upload_preparation_dir, '..')))
+    zipf.close()
+    logger.info(f"[{len(untar_source_file_path_to_arcname_map)}] files un-tar and zipped")
+    return zipped_upload_preparation_file_path
 
 
 def write_json(upload_preparation_dir, nomad_json):
