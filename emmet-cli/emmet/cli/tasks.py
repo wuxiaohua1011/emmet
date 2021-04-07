@@ -621,8 +621,8 @@ def upload_latest(mongo_configfile, num_materials):
             remove_raw = ["rclone", "purge", f"{(full_root_dir / 'raw').as_posix()}"]
             run_and_log_info(args=remove_raw)
 
-            remove_restore = ["rclone", "purge", f"{restore_dir.as_posix()}"]
-            run_and_log_info(args=remove_restore)
+            # remove_restore = ["rclone", "purge", f"{restore_dir.as_posix()}"]
+            # run_and_log_info(args=remove_restore)
         except Exception as e:
             logger.error(f"Something bad happened: {e}")
 
