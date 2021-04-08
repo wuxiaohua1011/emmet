@@ -611,9 +611,6 @@ def nomad_find_not_uploaded(gdrive_mongo_store: MongograntStore, num: int) -> Li
     results = [result for result in tmp_results.values()]
 
     logger.info(f"Prepared [{len(results)}] chunks with [{sum([len(r) for r in results])}] items [{total_size}] bytes")
-    from pprint import pprint
-    pprint(tmp_results)
-
     return results
 
 
@@ -633,6 +630,7 @@ def nomad_upload_data(task_ids: List[str], username: str,
         True of upload success
         None or False otherwise
     """
+    logger.info(f"[{name}] start processing [{len(task_ids)}] tasks")
     # create the bravado client
     nomad_url = 'http://nomad-lab.eu/prod/rae/mp/api'
     http_client = RequestsClient()
