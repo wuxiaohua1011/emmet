@@ -608,8 +608,11 @@ def nomad_find_not_uploaded(gdrive_mongo_store: MongograntStore, num: int) -> Li
                 total_size += file_size
         results.append(result)
     print(meta_data_counter, len(meta_datas))
-    logger.info(f"Prepared [{len(results)}] sets of data a total of [{sum([len(result) for result in results])}] items "
-                f"and a total of [{total_size}] bytes")
+    for result in results:
+        print(result)
+    logger.info(f"Prepared [{len(results)}] sets of uploads with"
+                f"[{sum([len(result) for result in results])}] items "
+                f"and [{total_size}] bytes")
 
     return results
 
