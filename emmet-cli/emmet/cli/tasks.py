@@ -744,7 +744,7 @@ def upload_to_nomad(nomad_configfile, num, mongo_configfile):
             thread = Thread(target=nomad_upload_data, args=(task_ids_not_uploaded[i],
                                                             username, password,
                                                             gdrive_mongo_store,
-                                                            full_root_dir, name,))
+                                                            full_root_dir / "tmp_storage", name,))
             threads.append(thread)
             thread.start()
 
