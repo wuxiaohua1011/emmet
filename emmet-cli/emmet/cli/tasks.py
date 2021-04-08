@@ -739,7 +739,7 @@ def upload_to_nomad(nomad_configfile, num, mongo_configfile):
         task_ids_not_uploaded: List[List[str]] = nomad_find_not_uploaded(num=num, gdrive_mongo_store=gdrive_mongo_store)
         from threading import Thread
         threads = []
-        for i in range(1):
+        for i in range(2):
             name = f"thread_{i}"
             thread = Thread(target=nomad_upload_data, args=(task_ids_not_uploaded[i],
                                                             username, password,
