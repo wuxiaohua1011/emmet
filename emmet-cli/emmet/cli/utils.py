@@ -643,7 +643,7 @@ def nomad_find_not_uploaded(gdrive_mongo_store: MongograntStore, num: int) -> Li
                 result.append(task_id)
                 size += file_size
                 total_size += file_size
-            meta_data_counter = current_meta_data_counter
+        meta_data_counter = current_meta_data_counter
         if meta_data_counter >= len(meta_datas):
             break
         print("meta_data_counter: ", meta_data_counter)
