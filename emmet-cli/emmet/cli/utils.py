@@ -722,7 +722,7 @@ def write_zip_from_targz(untar_source_file_path_to_arcname_map, upload_preparati
 
     # zip the file
     logger.info("Zipping files")
-    zipped_upload_preparation_file_path = upload_preparation_dir.as_posix() + ".zip"
+    zipped_upload_preparation_file_path = upload_preparation_dir.as_posix()
     shutil.make_archive(zipped_upload_preparation_file_path, 'zip', upload_preparation_dir.as_posix())
     # zipf = ZipFile(zipped_upload_preparation_file_path, 'w', ZIP_DEFLATED)
     # for root, dirs, files in tqdm(os.walk(upload_preparation_dir.as_posix())):
