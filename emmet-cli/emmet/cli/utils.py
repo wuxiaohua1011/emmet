@@ -693,9 +693,9 @@ def nomad_upload_data(task_ids: List[str], username: str,
     write_json(upload_preparation_dir=upload_preparation_dir, nomad_json=nomad_json)
 
     # un-tar.gz the files
-    zipped_upload_preparation_file_path = write_zip_from_targz(upload_preparation_dir=upload_preparation_dir,
-                                                               untar_source_file_path_to_arcname_map=
-                                                               untar_source_file_path_to_arcname_map)
+    # zipped_upload_preparation_file_path = write_zip_from_targz(upload_preparation_dir=upload_preparation_dir,
+    #                                                            untar_source_file_path_to_arcname_map=
+    #                                                            untar_source_file_path_to_arcname_map)
 
     # # upload to nomad
     # logger.info(f"Start Uploading [{zipped_upload_preparation_file_path}]"
