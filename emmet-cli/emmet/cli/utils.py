@@ -600,16 +600,19 @@ def nomad_find_not_uploaded(gdrive_mongo_store: MongograntStore, num: int) -> Li
 
 
 def nomad_upload_data(task_ids: List[str], username: str, password: str, gdrive_mongo_store: MongograntStore,
-                      root_dir: Path):
+                      root_dir: Path, name="thread_1"):
     """
     it is gaurenteed that sum of the file_size of the task_ids is less than 32 gb.
 
-    :param task_ids:
-    :param username:
-    :param password:
-    :param gdrive_mongo_store:
-    :param root_dir:
+    :param name: name of this upload
+    :param task_ids: task_ids to upload
+    :param username: username of nomad
+    :param password: password of nomad
+    :param gdrive_mongo_store: gdrive mongo store connection
+    :param root_dir: root dir to upload
     :return:
+        True of upload success
+        None or False otherwise
     """
     # create the bravado client
     nomad_url = 'http://nomad-lab.eu/prod/rae/mp/api'
@@ -622,7 +625,7 @@ def nomad_upload_data(task_ids: List[str], username: str, password: str, gdrive_
     # logger.info(f"Uploading the following tasks to NOMAD: \n{task_ids}")
 
     # prepare upload data
-    upload_preparation_dir = root_dir / Path(f"nomad_upload_{datetime.now().strftime('%m_%d_%Y')}")
+    upload_preparation_dir = root_dir / Path(f"nomad_upload_{name}_{datetime.now().strftime('%m_%d_%Y')}")
     if not upload_preparation_dir.exists():
         upload_preparation_dir.mkdir(parents=True, exist_ok=True)
 
