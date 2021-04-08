@@ -684,14 +684,14 @@ def nomad_upload_data(task_ids: List[str], username: str,
         upload_preparation_dir.mkdir(parents=True, exist_ok=True)
 
     # organize_data
-    # nomad_json, untar_source_file_path_to_arcname_map = nomad_organize_data(task_ids=task_ids, records=records,
-    #                                                                         root_dir=root_dir,
-    #                                                                         upload_preparation_dir=
-    #                                                                         upload_preparation_dir,
-    #                                                                         name=name)
-    #
-    # # write json data to file
-    # write_json(upload_preparation_dir=upload_preparation_dir, nomad_json=nomad_json, name=name)
+    nomad_json, untar_source_file_path_to_arcname_map = nomad_organize_data(task_ids=task_ids, records=records,
+                                                                            root_dir=root_dir,
+                                                                            upload_preparation_dir=
+                                                                            upload_preparation_dir,
+                                                                            name=name)
+
+    # write json data to file
+    write_json(upload_preparation_dir=upload_preparation_dir, nomad_json=nomad_json, name=name)
 
     # un-tar.gz the files
     # zipped_upload_preparation_file_path = write_zip_from_targz(upload_preparation_dir=upload_preparation_dir,
