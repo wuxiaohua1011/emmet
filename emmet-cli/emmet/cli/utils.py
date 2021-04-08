@@ -589,7 +589,6 @@ def nomad_find_not_uploaded(gdrive_mongo_store: MongograntStore, num: int) -> Li
     single_max_nomad_upload_size = 300 * 1e6 #32 * 1e9  # 32 gb
     results: List[List[str]] = []
     tmp_results: Dict[int, List[str]] = dict()
-    meta_data_counter = 0
     total_size = 0
     result_counter = 0
     curr_size = 0
@@ -609,11 +608,9 @@ def nomad_find_not_uploaded(gdrive_mongo_store: MongograntStore, num: int) -> Li
                 curr_size += file_size
                 total_size += file_size
 
-    #
-    # logger.info(f"Prepared [{len(results)}] sets of uploads with "
-    #             f"[{sum([len(result) for result in results])}] items "
-    #             f"and [{total_size}] bytes")
+    results = [result for result in tmp_results.values()]
 
+    logger.info(f"Prepared [{len(results)}] chunks with [{sum([len(r) for r in results])}] items [{total_size}] bytes")
     from pprint import pprint
     pprint(tmp_results)
 
