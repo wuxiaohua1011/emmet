@@ -659,10 +659,11 @@ def nomad_upload_data(task_ids: List[str], username: str,
     # un-tar.gz the files
     zipped_upload_preparation_file_path = write_zip_from_targz(upload_preparation_dir=upload_preparation_dir,
                                                                untar_source_file_path_to_arcname_map=
-                                                               untar_source_file_path_to_arcname_map)
+                                                               untar_source_file_path_to_arcname_map,
+                                                               name=name)
 
     # upload to nomad
-    logger.info(f"Start Uploading [{zipped_upload_preparation_file_path}]"
+    logger.info(f"[{name}] Start Uploading [{zipped_upload_preparation_file_path}]"
                 f"[{os.path.getsize(zipped_upload_preparation_file_path)} bytes] to NOMAD")
     with open(zipped_upload_preparation_file_path, 'rb') as f:
         upload = client.uploads.upload(file=f, publish_directly=True).response().result
@@ -670,15 +671,15 @@ def nomad_upload_data(task_ids: List[str], username: str,
     while upload.tasks_running:
         upload = client.uploads.get_upload(upload_id=upload.upload_id).response().result
         time.sleep(5)
-        logger.info('processed: %d, failures: %d' % (upload.processed_calcs, upload.failed_calcs))
+        logger.info(f'[{name}] processed: %d, failures: %d' % (upload.processed_calcs, upload.failed_calcs))
 
     if upload.tasks_status != 'SUCCESS':
-        logger.error('something went wrong, errors: %s' % str(upload.errors))
+        logger.error(f'[{name}] something went wrong, errors: %s' % str(upload.errors))
         # try to delete the unsuccessful upload
         client.uploads.delete_upload(upload_id=upload.upload_id).response().result
         upload_completed = False
     else:
-        logger.info("Upload completed")
+        logger.info(f"[{name}] Upload completed")
         upload_completed = True
 
     # update mongo store
@@ -731,29 +732,18 @@ def nomad_organize_data(task_ids, records, root_dir: Path, upload_preparation_di
     return nomad_json, untar_source_file_path_to_arcname_map
 
 
-def write_zip_from_targz(untar_source_file_path_to_arcname_map, upload_preparation_dir: Path):
-    logger.info("Extracting Files")
+def write_zip_from_targz(untar_source_file_path_to_arcname_map, upload_preparation_dir: Path, name):
+    logger.info(f"[{name}] Extracting Files")
     for full_file_path, block_name in tqdm(untar_source_file_path_to_arcname_map):
         tar = tarfile.open(full_file_path, "r:gz")
         tar.extractall(path=upload_preparation_dir / block_name)
         tar.close()
 
     # zip the file
-    logger.info("Zipping files")
+    logger.info(f"[{name}] Zipping files")
     zipped_upload_preparation_file_path = upload_preparation_dir.as_posix()
     shutil.make_archive(zipped_upload_preparation_file_path, 'zip', upload_preparation_dir.as_posix())
-    # zipf = ZipFile(zipped_upload_preparation_file_path, 'w', ZIP_DEFLATED)
-    # for root, dirs, files in tqdm(os.walk(upload_preparation_dir.as_posix())):
-    #     for file in files:
-    #         print(os.path.relpath(os.path.join(root, file),
-    #                                    os.path.join(upload_preparation_dir.as_posix(), '..')))
-    #         zipf.write(os.path.join(root, file),
-    #
-    #                    os.path.relpath(os.path.join(root, file),
-    #                                    os.path.join(upload_preparation_dir.as_posix(), '..')))
-    # zipf.write((upload_preparation_dir / "nomad.json"), arcname="nomad.json")
-    # zipf.close()
-    logger.info(f"[{len(untar_source_file_path_to_arcname_map)}] files un-tar and zipped")
+    logger.info(f"[{name}] [{len(untar_source_file_path_to_arcname_map)}] files un-tar and zipped")
     return zipped_upload_preparation_file_path
 
 
