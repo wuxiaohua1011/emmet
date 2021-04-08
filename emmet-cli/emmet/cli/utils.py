@@ -586,14 +586,14 @@ def nomad_find_not_uploaded(gdrive_mongo_store: MongograntStore, num: int) -> Li
         )
 
     meta_datas = [r for r in raw]
-    single_max_nomad_upload_size = 32 * 1e9  # 32 gb
-    results: List[List[str]] = []
+    single_max_nomad_upload_size = 300 * 1e6  # 32 * 1e9  # 32 gb
     tmp_results: Dict[int, List[str]] = dict()
     total_size = 0
     result_counter = 0
     curr_size = 0
+    max_chunks = 10
     for meta_data in meta_datas:
-        if result_counter >= 10:
+        if result_counter >= max_chunks:
             break
         else:
             file_size = meta_data["file_size"]
@@ -617,7 +617,8 @@ def nomad_find_not_uploaded(gdrive_mongo_store: MongograntStore, num: int) -> Li
     return results
 
 
-def nomad_upload_data(task_ids: List[str], username: str, password: str, gdrive_mongo_store: MongograntStore,
+def nomad_upload_data(task_ids: List[str], username: str,
+                      password: str, gdrive_mongo_store: MongograntStore,
                       root_dir: Path, name="thread_1"):
     """
     it is gaurenteed that sum of the file_size of the task_ids is less than 32 gb.
