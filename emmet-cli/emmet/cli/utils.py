@@ -726,9 +726,11 @@ def write_zip_from_targz(untar_source_file_path_to_arcname_map, upload_preparati
     zipf = ZipFile(zipped_upload_preparation_file_path, 'w', ZIP_DEFLATED)
     for root, dirs, files in tqdm(os.walk(upload_preparation_dir.as_posix())):
         for file in files:
+            print(os.path.relpath(os.path.join(root, file),
+                                       os.path.join(upload_preparation_dir.as_posix(), '..')))
             zipf.write(os.path.join(root, file),
                        os.path.relpath(os.path.join(root, file),
-                                       os.path.join(upload_preparation_dir.parent.as_posix(), '..')))
+                                       os.path.join(upload_preparation_dir.as_posix(), '..')))
     zipf.write((upload_preparation_dir / "nomad.json"), arcname="nomad.json")
     zipf.close()
     logger.info(f"[{len(untar_source_file_path_to_arcname_map)}] files un-tar and zipped")
