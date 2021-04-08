@@ -684,13 +684,14 @@ def nomad_upload_data(task_ids: List[str], username: str,
         upload_preparation_dir.mkdir(parents=True, exist_ok=True)
 
     # organize_data
-    nomad_json, untar_source_file_path_to_arcname_map = nomad_organize_data(task_ids=task_ids, records=records,
-                                                                            root_dir=root_dir,
-                                                                            upload_preparation_dir=
-                                                                            upload_preparation_dir)
-
-    # write json data to file
-    write_json(upload_preparation_dir=upload_preparation_dir, nomad_json=nomad_json)
+    # nomad_json, untar_source_file_path_to_arcname_map = nomad_organize_data(task_ids=task_ids, records=records,
+    #                                                                         root_dir=root_dir,
+    #                                                                         upload_preparation_dir=
+    #                                                                         upload_preparation_dir,
+    #                                                                         name=name)
+    #
+    # # write json data to file
+    # write_json(upload_preparation_dir=upload_preparation_dir, nomad_json=nomad_json, name=name)
 
     # un-tar.gz the files
     # zipped_upload_preparation_file_path = write_zip_from_targz(upload_preparation_dir=upload_preparation_dir,
@@ -732,7 +733,7 @@ def nomad_upload_data(task_ids: List[str], username: str,
     # return upload_completed
 
 
-def nomad_organize_data(task_ids, records, root_dir: Path, upload_preparation_dir: Path):
+def nomad_organize_data(task_ids, records, root_dir: Path, upload_preparation_dir: Path, name):
     # loop over records, generate json & pack into zip &
     nomad_json: dict = {"comment": f"Materials Project Upload at {datetime.now()}",
                         "external_db": "Materials Project",
@@ -746,7 +747,7 @@ def nomad_organize_data(task_ids, records, root_dir: Path, upload_preparation_di
         full_file_path: Path = (root_dir / (record.path + ".tar.gz"))
         if not full_file_path.exists():
             record.error = f"Record can no longer be found in {full_file_path}"
-            logger.info(f"File not found: Record can no longer be found in {full_file_path}")
+            logger.info(f"[{name}] File not found: Record can no longer be found in {full_file_path}")
         else:
             my_tar = tarfile.open(full_file_path.as_posix(), "r")
             file_names = my_tar.getnames()
@@ -793,13 +794,13 @@ def write_zip_from_targz(untar_source_file_path_to_arcname_map, upload_preparati
     return zipped_upload_preparation_file_path
 
 
-def write_json(upload_preparation_dir, nomad_json):
+def write_json(upload_preparation_dir, nomad_json, name):
     # json_file_name = f"nomad_{datetime.now().strftime('%m_%d_%Y_%H_%M_%S')}.json"
     json_file_name = "nomad.json"
     json_file_path = upload_preparation_dir / json_file_name
     with open(json_file_path.as_posix(), 'w') as outfile:
         json.dump(nomad_json, outfile, indent=4)
-    logger.info("NOMAD JSON prepared")
+    logger.info(f"[{name}] NOMAD JSON prepared")
 
 
 def nomad_upload_helper(client, file):
