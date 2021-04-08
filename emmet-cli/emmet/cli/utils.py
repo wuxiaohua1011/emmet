@@ -624,36 +624,27 @@ def nomad_find_not_uploaded(gdrive_mongo_store: MongograntStore, num: int) -> Li
 
     meta_datas = [r for r in raw]
     single_max_nomad_upload_size = 300 * 1e6  # 32 * 1e9  # 32 gb
-    results: List[List[str]] = [[] * 10]
+    results: List[List[str]] = []
+    meta_data_counter = 0
+    total_size = 0
 
-    result_index = 0
-    size = 0
-
-    for meta_data in meta_datas:
-        task_id = meta_data["task_id"]
-        file_size = meta_data["file_size"]
-        if size + file_size > single_max_nomad_upload_size:
-            size = 0
-            result_index += 1
-        elif result_index >= 10:
-            break
-        else:
-            result = results[result_index]
-            result.append(task_id)
-            size += file_size
-
-    # size = 0
-    # meta_data_counter = 0
-    # for result in results:
-    #     for i in range(meta_data_counter, len(meta_datas)):
-    #         task_id = meta_datas[meta_data_counter]["task_id"]
-    #         file_size = meta_datas[meta_data_counter]["file_size"]
-    #         if size + file_size < single_max_nomad_upload_size:
-    #             result.append(task_id)
-    #             size += file_size
-    #         else:
-    #             break
-    logger.info(f"Prepared [{len(results)}] sets of data each with [{[len(result) for result in results]}] items")
+    for i in range(10):
+        result = []
+        size = 0
+        for current_meta_data_counter in range(meta_data_counter, len(meta_datas)):
+            meta_data = meta_datas[current_meta_data_counter]
+            task_id = meta_data["task_id"]
+            file_size = meta_data["file_size"]
+            if size + file_size >= single_max_nomad_upload_size:
+                meta_data_counter = current_meta_data_counter
+                break
+            else:
+                result.append(task_id)
+                size += file_size
+                total_size += file_size
+        results.append(result)
+    logger.info(f"Prepared [{len(results)}] sets of data each with [{[len(result) for result in results]}] items "
+                f"and a total of [{total_size}] bytes")
 
     for result in results:
         print(result)
