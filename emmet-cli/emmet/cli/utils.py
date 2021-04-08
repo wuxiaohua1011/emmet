@@ -636,9 +636,9 @@ def nomad_upload_data(task_ids: List[str], username: str, password: str, gdrive_
     write_json(upload_preparation_dir=upload_preparation_dir, nomad_json=nomad_json)
 
     # un-tar.gz the files
-    # zipped_upload_preparation_file_path = write_zip_from_targz(upload_preparation_dir=upload_preparation_dir,
-    #                                                            untar_source_file_path_to_arcname_map=
-    #                                                            untar_source_file_path_to_arcname_map)
+    zipped_upload_preparation_file_path = write_zip_from_targz(upload_preparation_dir=upload_preparation_dir,
+                                                               untar_source_file_path_to_arcname_map=
+                                                               untar_source_file_path_to_arcname_map)
 
     # # upload to nomad
     # logger.info(f"Start Uploading [{zipped_upload_preparation_file_path}]"
@@ -725,7 +725,7 @@ def write_zip_from_targz(untar_source_file_path_to_arcname_map, upload_preparati
         for file in files:
             zipf.write(os.path.join(root, file),
                        os.path.relpath(os.path.join(root, file),
-                                       os.path.join(upload_preparation_dir, '..')))
+                                       os.path.join(upload_preparation_dir.parent.as_posix(), '..')))
     zipf.write((upload_preparation_dir / "nomad.json"), arcname="nomad.json")
     zipf.close()
     logger.info(f"[{len(untar_source_file_path_to_arcname_map)}] files un-tar and zipped")
