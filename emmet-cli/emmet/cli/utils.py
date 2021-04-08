@@ -777,7 +777,7 @@ def write_zip_from_targz(untar_source_file_path_to_arcname_map, upload_preparati
         tar.close()
 
     # zip the file
-    logger.info(f"[{name}] Zipping files")
+    logger.info(f"[{name}] Zipping files... (This may take a while)")
     zipped_upload_preparation_file_path = upload_preparation_dir.as_posix()
     shutil.make_archive(zipped_upload_preparation_file_path, 'zip', upload_preparation_dir.as_posix())
     logger.info(f"[{name}] [{len(untar_source_file_path_to_arcname_map)}] files un-tar and zipped")
