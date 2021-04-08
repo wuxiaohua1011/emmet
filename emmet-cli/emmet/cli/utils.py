@@ -636,9 +636,9 @@ def nomad_upload_data(task_ids: List[str], username: str, password: str, gdrive_
     write_json(upload_preparation_dir=upload_preparation_dir, nomad_json=nomad_json)
 
     # un-tar.gz the files
-    zipped_upload_preparation_file_path = write_zip_from_targz(upload_preparation_dir=upload_preparation_dir,
-                                                               untar_source_file_path_to_arcname_map=
-                                                               untar_source_file_path_to_arcname_map)
+    # zipped_upload_preparation_file_path = write_zip_from_targz(upload_preparation_dir=upload_preparation_dir,
+    #                                                            untar_source_file_path_to_arcname_map=
+    #                                                            untar_source_file_path_to_arcname_map)
 
     # # upload to nomad
     # logger.info(f"Start Uploading [{zipped_upload_preparation_file_path}]"
@@ -672,7 +672,7 @@ def nomad_upload_data(task_ids: List[str], username: str, password: str, gdrive_
     # if Path(zipped_upload_preparation_file_path).exists():
     #     os.remove(zipped_upload_preparation_file_path)
 
-    return upload_completed
+    # return upload_completed
 
 
 def nomad_organize_data(task_ids, records, root_dir: Path, upload_preparation_dir: Path):
