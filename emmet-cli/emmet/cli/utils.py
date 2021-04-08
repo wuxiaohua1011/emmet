@@ -625,36 +625,33 @@ def nomad_find_not_uploaded(gdrive_mongo_store: MongograntStore, num: int) -> Li
     meta_datas = [r for r in raw]
     single_max_nomad_upload_size = 32 * 1e9  # 32 gb
     results: List[List[str]] = []
+    tmp_results: Dict[int, List[str]] = dict()
     meta_data_counter = 0
     total_size = 0
-
-    for i in range(10):
-        result = []
-        size = 0
-        for current_meta_data_counter in range(meta_data_counter, len(meta_datas)):
-            meta_data = meta_datas[current_meta_data_counter]
-            task_id = meta_data["task_id"]
-            file_size = meta_data["file_size"]
-            if size + file_size >= single_max_nomad_upload_size:
-                meta_data_counter = current_meta_data_counter
-                print(result, size, file_size)
-                break
-            else:
-                result.append(task_id)
-                size += file_size
-                total_size += file_size
-                meta_data_counter = current_meta_data_counter + 1
-        if meta_data_counter >= len(meta_datas):
+    result_counter = 0
+    curr_size = 0
+    for meta_data in meta_datas:
+        if result_counter >= 10:
             break
-        print("meta_data_counter: ", meta_data_counter)
-        results.append(result)
+        else:
+            file_size = meta_data["file_size"]
+            task_id = meta_data["task_id"]
+            if curr_size + file_size >= single_max_nomad_upload_size:
+                curr_size = 0
+                result_counter += 1
+            else:
+                l = tmp_results.get(result_counter, [])
+                l.append(task_id)
+                tmp_results[result_counter] = l
+                curr_size += file_size
 
-    logger.info(f"Prepared [{len(results)}] sets of uploads with "
-                f"[{sum([len(result) for result in results])}] items "
-                f"and [{total_size}] bytes")
+    #
+    # logger.info(f"Prepared [{len(results)}] sets of uploads with "
+    #             f"[{sum([len(result) for result in results])}] items "
+    #             f"and [{total_size}] bytes")
 
-    for result in results:
-        print(len(result))
+    from pprint import pprint
+    pprint(tmp_results)
 
     return results
 
