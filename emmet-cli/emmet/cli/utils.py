@@ -688,11 +688,11 @@ def nomad_upload_data(task_ids: List[str], username: str,
         record.nomad_upload_id = upload.upload_id
     gdrive_mongo_store.update(docs=[record.dict() for record in records], key="task_id")
 
-    # clean up
-    if upload_preparation_dir.exists():
-        shutil.rmtree(upload_preparation_dir.as_posix())
-    if Path(zipped_upload_preparation_file_path).exists():
-        os.remove(zipped_upload_preparation_file_path)
+    # # clean up
+    # if upload_preparation_dir.exists():
+    #     shutil.rmtree(upload_preparation_dir.as_posix())
+    # if Path(zipped_upload_preparation_file_path).exists():
+    #     os.remove(zipped_upload_preparation_file_path)
 
     return upload_completed
 
