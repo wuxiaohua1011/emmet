@@ -623,7 +623,7 @@ def nomad_find_not_uploaded(gdrive_mongo_store: MongograntStore, num: int) -> Li
         )
 
     meta_datas = [r for r in raw]
-    single_max_nomad_upload_size = 32 * 1e9  # 32 gb
+    single_max_nomad_upload_size = 300 * 1e6 #32 * 1e9  # 32 gb
     size = 0
     results: List[List[str]] = [[] * 10]
     meta_data_counter = 0
@@ -637,6 +637,10 @@ def nomad_find_not_uploaded(gdrive_mongo_store: MongograntStore, num: int) -> Li
             else:
                 break
         logger.info(f"Found [{len(result)}] launchers with total size [{size}] bytes")
+
+    for result in results:
+        print(result)
+
     return results
 
 
