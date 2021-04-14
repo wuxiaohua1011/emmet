@@ -741,12 +741,23 @@ def write_zip_from_targz(untar_source_file_path_to_arcname_map, upload_preparati
         tar.close()
 
     # zip the file
-    logger.info(f"[{name}] Zipping files... (This may take a while)")
-    zipped_upload_preparation_file_path = upload_preparation_dir.as_posix()
-    shutil.make_archive(zipped_upload_preparation_file_path, 'zip', upload_preparation_dir.as_posix())
-    logger.info(f"[{name}] [{len(untar_source_file_path_to_arcname_map)}] files un-tar and zipped")
-    return zipped_upload_preparation_file_path + ".zip"
+    zipped_upload_preparation_file_path = upload_preparation_dir.as_posix() + ".zip"
+    logger.info(f"[{name}] Zipping files to [{zipped_upload_preparation_file_path}.zip] (This may take a while)")
+    zipf = ZipFile(zipped_upload_preparation_file_path, 'w', ZIP_DEFLATED)
+    zipdir(upload_preparation_dir.as_posix(), zipf)
+    zipf.close()
 
+    # shutil.make_archive(zipped_upload_preparation_file_path, 'zip', upload_preparation_dir.as_posix())
+    # logger.info(f"[{name}] [{len(untar_source_file_path_to_arcname_map)}] files un-tar and zipped")
+    # return zipped_upload_preparation_file_path
+
+def zipdir(path, ziph):
+    # ziph is zipfile handle
+    for root, dirs, files in os.walk(path):
+        for file in files:
+            ziph.write(os.path.join(root, file),
+                       os.path.relpath(os.path.join(root, file),
+                                       os.path.join(path, '..')))
 
 def write_json(upload_preparation_dir, nomad_json, name):
     # json_file_name = f"nomad_{datetime.now().strftime('%m_%d_%Y_%H_%M_%S')}.json"
