@@ -707,6 +707,7 @@ def nomad_organize_data(task_ids, records, root_dir: Path, upload_preparation_di
     untar_source_file_path_to_arcname_map: List[
         Tuple[str, str]] = list()  # list of (full_path/launcher-xyz.tar.gz launcher-xyz.tar.gz)
     logger.info(f"Organizing {len(task_ids)} launchers")
+
     for record in tqdm(records):
         full_path_without_suffix: Path = root_dir / record.path
         full_file_path: Path = (root_dir / (record.path + ".tar.gz"))
@@ -722,7 +723,7 @@ def nomad_organize_data(task_ids, records, root_dir: Path, upload_preparation_di
             references = [f"https://materialsproject.org/tasks/{external_id}"]
             entries: dict = nomad_json.get("entries")
             block_index = full_path_without_suffix.as_posix().rfind("block")
-            nomad_name = (Path((full_path_without_suffix.as_posix()[block_index:])) / vasp_run_name).as_posix()
+            nomad_name = (Path(upload_preparation_dir) / Path((full_path_without_suffix.as_posix()[block_index:])) / vasp_run_name).as_posix()
             first_launcher_index = full_path_without_suffix.as_posix().find("launcher")
             # nomad_name = (upload_preparation_dir.name /
             #               Path(full_path_without_suffix.as_posix()[last_launcher_index:]) / vasp_run_name).as_posix()
@@ -741,10 +742,11 @@ def write_zip_from_targz(untar_source_file_path_to_arcname_map, upload_preparati
         tar.close()
 
     # zip the file
-    zipped_upload_preparation_file_path = upload_preparation_dir.as_posix() + ".zip"
+    zipped_upload_preparation_file_path = upload_preparation_dir.as_posix()
     logger.info(f"[{name}] Zipping files to [{zipped_upload_preparation_file_path}.zip] (This may take a while)")
     zipf = ZipFile(zipped_upload_preparation_file_path, 'w', ZIP_DEFLATED)
     zipdir(upload_preparation_dir.as_posix(), zipf)
+    zipf.write(filename=upload_preparation_dir/"nomad.json", arcname="nomad.json")
     zipf.close()
 
     # shutil.make_archive(zipped_upload_preparation_file_path, 'zip', upload_preparation_dir.as_posix())
