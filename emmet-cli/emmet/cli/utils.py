@@ -731,7 +731,8 @@ def nomad_upload_data(task_ids: List[str], username: str,
     # if Path(zipped_upload_preparation_file_path).exists():
     #     os.remove(zipped_upload_preparation_file_path)
 
-    return upload_completed
+    # return upload_completed
+    return False
 
 
 def nomad_organize_data(task_ids, records, root_dir: Path, upload_preparation_dir: Path, name):
@@ -781,7 +782,7 @@ def write_zip_from_targz(untar_source_file_path_to_arcname_map, upload_preparati
     zipped_upload_preparation_file_path = upload_preparation_dir.as_posix()
     shutil.make_archive(zipped_upload_preparation_file_path, 'zip', upload_preparation_dir.as_posix())
     logger.info(f"[{name}] [{len(untar_source_file_path_to_arcname_map)}] files un-tar and zipped")
-    return zipped_upload_preparation_file_path+".zip"
+    return zipped_upload_preparation_file_path + ".zip"
 
 
 def write_json(upload_preparation_dir, nomad_json, name):
