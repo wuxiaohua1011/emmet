@@ -760,7 +760,7 @@ def nomad_organize_data(task_ids, records, root_dir: Path, upload_preparation_di
             references = [f"https://materialsproject.org/tasks/{external_id}"]
             entries: dict = nomad_json.get("entries")
             block_index = full_path_without_suffix.as_posix().rfind("block")
-            nomad_name = (Path(upload_preparation_dir) / Path((full_path_without_suffix.as_posix()[block_index:])) / vasp_run_name).as_posix()
+            nomad_name = (Path(upload_preparation_dir.name) / Path((full_path_without_suffix.as_posix()[block_index:])) / vasp_run_name).as_posix()
             first_launcher_index = full_path_without_suffix.as_posix().find("launcher")
             # nomad_name = (upload_preparation_dir.name /
             #               Path(full_path_without_suffix.as_posix()[last_launcher_index:]) / vasp_run_name).as_posix()
