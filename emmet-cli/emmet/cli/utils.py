@@ -780,7 +780,7 @@ def write_zip_from_targz(untar_source_file_path_to_arcname_map, upload_preparati
 
     # zip the file
     zipped_upload_preparation_file_path = upload_preparation_dir.as_posix() + ".zip"
-    logger.info(f"[{name}] Zipping files to [{zipped_upload_preparation_file_path}.zip] (This may take a while)")
+    logger.info(f"[{name}] Zipping files to [{zipped_upload_preparation_file_path}] (This may take a while)")
     zipf = ZipFile(zipped_upload_preparation_file_path, 'w', ZIP_DEFLATED)
     zipdir(upload_preparation_dir.as_posix(), zipf)
     zipf.write(filename=upload_preparation_dir/"nomad.json", arcname="nomad.json")
