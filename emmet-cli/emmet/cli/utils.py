@@ -623,7 +623,7 @@ def nomad_find_not_uploaded(gdrive_mongo_store: MongograntStore, num: int) -> Li
         )
 
     meta_datas = [r for r in raw]
-    single_max_nomad_upload_size = 300 * 1e6  # 32 * 1e9  # 32 gb
+    single_max_nomad_upload_size = 32 * 1e9  # 32 gb
     tmp_results: Dict[int, List[str]] = dict()
     total_size = 0
     result_counter = 0
@@ -731,8 +731,7 @@ def nomad_upload_data(task_ids: List[str], username: str,
     if Path(zipped_upload_preparation_file_path).exists():
         os.remove(zipped_upload_preparation_file_path)
 
-    # return upload_completed
-    return False
+    return upload_completed
 
 
 def nomad_organize_data(task_ids, records, root_dir: Path, upload_preparation_dir: Path, name):
