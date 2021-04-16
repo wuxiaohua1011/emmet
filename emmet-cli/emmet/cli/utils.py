@@ -705,8 +705,8 @@ def nomad_organize_data(task_ids, records, root_dir: Path, upload_preparation_di
     # populate json
     untar_source_file_path_to_arcname_map: List[
         Tuple[str, str]] = list()  # list of (full_path/launcher-xyz.tar.gz launcher-xyz.tar.gz)
-    logger.info(f"Organizing {len(task_ids)} launchers")
-
+    logger.info(f"[{name}] Organizing {len(task_ids)} launchers")
+    
     for record in tqdm(records):
         full_path_without_suffix: Path = root_dir / record.path
         full_file_path: Path = (root_dir / (record.path + ".tar.gz"))
