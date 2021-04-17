@@ -49,8 +49,8 @@ def nomad_find_not_uploaded(gdrive_mongo_store: MongograntStore, num: int) -> Li
 
 def clear_uploaded_fields(mongo_store: MongograntStore):
     cursor = mongo_store.query(criteria=
-        {"nomad_updated": {"$ne": None}}
-    )
+                               {"nomad_updated": {"$ne": None}}
+                               )
     new_objs = []
     for obj in cursor:
         obj["nomad_updated"] = None
@@ -60,12 +60,34 @@ def clear_uploaded_fields(mongo_store: MongograntStore):
     print("updated")
 
 
+def generate_report():
+    from nbconvert import HTMLExporter
+    import nbformat
+    from nbconvert.preprocessors import ExecutePreprocessor
+
+    base = Path(__file__).parent
+    notebook_file_path = base / "visualization.ipynb"
+    nb = nbformat.read(notebook_file_path.open("r"), as_version=4)
+    ep = ExecutePreprocessor(timeout=600, kernel_name="python3")
+    ep.preprocess(nb)
+    html_exporter = HTMLExporter()
+    html_data, resources = html_exporter.from_notebook_node(nb)
+    path = "index.html"
+    try:
+        with open(path, "wb") as f:
+            f.write(html_data.encode("utf8"))
+            f.close()
+    except Exception as e:
+        print(f"Cannot write to [{path}]: {e}")
+
+
 if __name__ == "__main__":
-    gdrive_mongo_store = MongograntStore(mongogrant_spec="rw:knowhere.lbl.gov/mp_core_mwu",
-                                         collection_name="gdrive")
-    gdrive_mongo_store.connect()
-    nomad_upload_query = {
-        "nomad_upload_id": {"$ne": None}
-    }
-    count = gdrive_mongo_store.count(criteria=nomad_upload_query)
-    clear_uploaded_fields(gdrive_mongo_store)
+    # gdrive_mongo_store = MongograntStore(mongogrant_spec="rw:knowhere.lbl.gov/mp_core_mwu",
+    #                                      collection_name="gdrive")
+    # gdrive_mongo_store.connect()
+    # nomad_upload_query = {
+    #     "nomad_upload_id": {"$ne": None}
+    # }
+    # count = gdrive_mongo_store.count(criteria=nomad_upload_query)
+    # clear_uploaded_fields(gdrive_mongo_store)
+    generate_report()
