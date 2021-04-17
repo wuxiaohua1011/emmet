@@ -72,7 +72,7 @@ def generate_report():
     ep.preprocess(nb)
     html_exporter = HTMLExporter()
     html_data, resources = html_exporter.from_notebook_node(nb)
-    path = "index.html"
+    path = "/var/www/launchers/index.html"
     try:
         with open(path, "wb") as f:
             f.write(html_data.encode("utf8"))
