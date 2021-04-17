@@ -146,7 +146,7 @@ def sbatch(func):
                 "qos": "xfer",
                 "time": "48:00:00",
                 "licenses": "SCRATCH",
-                "mem": "300GB",
+                "mem": "320GB",
             }
             command = ""
 
