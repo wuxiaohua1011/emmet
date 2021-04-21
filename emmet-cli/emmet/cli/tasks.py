@@ -721,9 +721,19 @@ def clear_uploaded(mongo_configfile):
             if '.tar.gz' in file and "nomad" not in r:
                 files.append(os.path.join(r, file))
     cleaned_files = [file[file.find("block"):][:-7] for file in files]
-    for file in cleaned_files:
-        print(file)
+    cursor = gdrive_mongo_store.query(criteria={"path": {"$in":cleaned_files}},
+                                      properties={"path":1, "nomad_updated":1})
+    log = dict()
+    for entry in cursor:
+        log[entry["path"]] = entry["nomad_updated"]
 
+    file_to_remove = []
+    for file in files:
+        if log.get(file, None) is not None and log[file] is not None:
+            file_to_remove.append(file)
+
+    for file in file_to_remove:
+        print(file)
     return ReturnCodes.SUCCESS
 
 @tasks.command()
