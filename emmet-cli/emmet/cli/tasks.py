@@ -671,7 +671,6 @@ def clear_uploaded(mongo_configfile):
     log = dict()
     for entry in cursor:
         log[entry["path"]] = entry["nomad_updated"]
-        print(entry["path"], type(entry["nomad_updated"]))
 
     file_to_remove = []
     for file in cleaned_files:
@@ -679,7 +678,12 @@ def clear_uploaded(mongo_configfile):
             file_to_remove.append(file)
 
     for file in file_to_remove:
-        print(file)
+        path = (storage_dir / file).as_posix() + ".tar.gz"
+        if os.path.exists(path):
+            logger.info(f"About to remove {path}")
+            # os.remove(path)
+        else:
+            logger.error(f"cannot find {path}")
     return ReturnCodes.SUCCESS
 
 @tasks.command()
