@@ -664,7 +664,8 @@ def clear_uploaded(mongo_configfile):
         for file in f:
             if '.tar.gz' in file and "nomad" not in r:
                 files.append(os.path.join(r, file))
-    for file in files:
+    cleaned_files = [file[file.find("block"):][:-7] for file in files]
+    for file in cleaned_files:
         print(file)
 
     return ReturnCodes.SUCCESS
