@@ -730,7 +730,7 @@ def clear_uploaded(mongo_configfile):
         print(entry["path"], type(entry["nomad_updated"]))
 
     file_to_remove = []
-    for file in files:
+    for file in cleaned_files:
         if log.get(file, None) is not None and log[file] is not None:
             file_to_remove.append(file)
 
