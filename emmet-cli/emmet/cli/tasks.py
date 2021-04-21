@@ -630,6 +630,42 @@ def upload_latest(mongo_configfile, num_materials):
         logger.info("Run flag not supplied...")
     return ReturnCodes.SUCCESS
 
+@tasks.command()
+@click.option(
+    "--mongo-configfile",
+    required=False,
+    default=Path("~/.mongogrant.json").expanduser().as_posix(),
+    type=click.Path(),
+    help="mongo db connections. Path should be full path."
+)
+@sbatch
+def clear_uploaded(mongo_configfile):
+    ctx = click.get_current_context()
+    run = ctx.parent.parent.params["run"]
+    directory = ctx.parent.params["directory"]
+    full_root_dir: Path = Path(directory)
+
+    storage_dir = full_root_dir / "tmp_storage"
+    if storage_dir.exists() is False:
+        raise FileNotFoundError(f"Storage Directory at [{storage_dir}] is not found")
+    configfile: Path = Path(mongo_configfile)
+    if configfile.exists() is False:
+        raise FileNotFoundError(f"Config file [{configfile}] is not found")
+
+    # connect to mongo necessary mongo stores
+    gdrive_mongo_store = MongograntStore(mongogrant_spec="rw:knowhere.lbl.gov/mp_core_mwu",
+                                         collection_name="gdrive",
+                                         mgclient_config_path=configfile.as_posix())
+
+    # find all files in current directory
+    files = []
+    # r=root, d=directories, f = files
+    for r, d, f in os.walk(storage_dir.as_posix()):
+        for file in f:
+            if '.tar.gz' in file and "nomad" not in r:
+                files.append(os.path.join(r, file))
+    for f in files:
+        print(f)
 
 @tasks.command()
 @sbatch
