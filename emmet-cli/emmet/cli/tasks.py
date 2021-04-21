@@ -676,12 +676,13 @@ def clear_uploaded(mongo_configfile):
     for file in cleaned_files:
         if log.get(file, None) is not None and log[file] is not None:
             file_to_remove.append(file)
-
-    for file in file_to_remove:
+    from tqdm import tqdm
+    logger.info(f"About to remove {len(file_to_remove)} files that have been uploaded to NOMAD and GDrive")
+    for file in tqdm(file_to_remove):
         path = (storage_dir / file).as_posix() + ".tar.gz"
         if os.path.exists(path):
-            logger.info(f"About to remove {path}")
-            # os.remove(path)
+            pass
+                # os.remove(path)
         else:
             logger.error(f"cannot find {path}")
     return ReturnCodes.SUCCESS
