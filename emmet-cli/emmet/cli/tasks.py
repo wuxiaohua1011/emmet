@@ -712,6 +712,7 @@ def clear_uploaded(mongo_configfile):
     gdrive_mongo_store = MongograntStore(mongogrant_spec="rw:knowhere.lbl.gov/mp_core_mwu",
                                          collection_name="gdrive",
                                          mgclient_config_path=configfile.as_posix())
+    gdrive_mongo_store.connect()
 
     # find all files in current directory
     files = []
