@@ -727,7 +727,7 @@ def clear_uploaded(mongo_configfile):
     log = dict()
     for entry in cursor:
         log[entry["path"]] = entry["nomad_updated"]
-        print(entry["path"], entry["nomad_updated"])
+        print(entry["path"], type(entry["nomad_updated"]))
 
     file_to_remove = []
     for file in files:
