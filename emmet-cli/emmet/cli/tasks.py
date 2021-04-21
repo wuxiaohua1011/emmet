@@ -720,7 +720,9 @@ def clear_uploaded(mongo_configfile):
         for file in f:
             if '.tar.gz' in file and "nomad" not in r:
                 files.append(os.path.join(r, file))
-    print(len(files))
+    for file in files:
+        print(file)
+
     return ReturnCodes.SUCCESS
 
 @tasks.command()
