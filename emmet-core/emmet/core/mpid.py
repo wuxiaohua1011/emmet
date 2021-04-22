@@ -7,6 +7,7 @@ NOTHING = object()
 mpid_regex = re.compile(r"^([A-Za-z]*-)?(\d+)(-[A-Za-z0-9]+)*$")
 
 
+
 class MPID:
     """
     A Materials Project type ID with a prefix and an integer
@@ -19,6 +20,7 @@ class MPID:
 
         if isinstance(val, MPID):
             self.parts = val.parts  # type: ignore
+
 
         elif isinstance(val, int):
             self.parts = (NOTHING, val)
@@ -51,6 +53,7 @@ class MPID:
         elif isinstance(other, str):
             other_parts = other.split("-")
             other_parts[1] = int(other_parts[1])  # type: ignore
+
         else:
             other_parts = other.parts
 
@@ -64,6 +67,7 @@ class MPID:
     def __modify_schema__(cls, field_schema):
         field_schema.update(
             pattern=r"^([A-Za-z]*-)?(\d+)(-[A-Za-z0-9]+)*$",
+
             examples=["mp-3534", "3453", "mp-834-Ag"],
         )
 
