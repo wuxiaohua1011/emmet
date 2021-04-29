@@ -669,7 +669,7 @@ def nomad_upload_data(task_ids: List[str], username: str,
     """
     logger.info(f"[{name}] start processing [{len(task_ids)}] tasks")
     # create the bravado client
-    nomad_url = 'http://nomad-lab.eu/prod/rae/mp/api'
+    nomad_url = 'http://nomad-lab.eu/prod/rae/api'
     http_client = RequestsClient()
     http_client.authenticator = KeycloakAuthenticator(user=username, password=password, nomad_url=nomad_url)
     client: SwaggerClient = SwaggerClient.from_url('%s/swagger.json' % nomad_url, http_client=http_client)
