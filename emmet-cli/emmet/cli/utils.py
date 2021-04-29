@@ -602,11 +602,6 @@ def nomad_find_not_uploaded(gdrive_mongo_store: MongograntStore, num: int) -> Li
     :param password:
     :param num:
     :return:
-        materials = material_mongo_store.query(
-        criteria={"$and": [{"deprecated": False}, {"task_id": {"$nin": exclude_list}}]},
-        properties={"task_id": 1, "blessed_tasks": 1, "last_updated": 1},
-        sort={"last_updated": Sort.Descending},
-        limit=max_num)
     """
     if num >= 0:
         raw = gdrive_mongo_store.query(
