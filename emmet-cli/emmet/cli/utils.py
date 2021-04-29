@@ -719,11 +719,12 @@ def nomad_upload_data(task_ids: List[str], username: str,
         logger.info(f"[{name}] Upload completed")
         upload_completed = True
 
-    # update mongo store
-    for record in records:
-        record.nomad_updated = datetime.now()
-        record.nomad_upload_id = upload.upload_id
-    gdrive_mongo_store.update(docs=[record.dict() for record in records], key="task_id")
+    if upload_completed:
+        # update mongo store
+        for record in records:
+            record.nomad_updated = datetime.now()
+            record.nomad_upload_id = upload.upload_id
+        gdrive_mongo_store.update(docs=[record.dict() for record in records], key="task_id")
 
     # clean up
     if upload_preparation_dir.exists():
