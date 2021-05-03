@@ -664,11 +664,12 @@ def nomad_upload_data(task_ids: List[str], username: str,
     url = nomad_url + '/uploads/?publish_directly=true'
     with open(zipped_upload_preparation_file_path, 'rb') as f:
         response = requests.put(url=url, headers={'Authorization': 'Bearer %s' % token}, data=f)
+    upload_id = response.json()['upload_id']
     if response.status_code == 200:
+        logger.info(f"[{name}] is done uploading. Upload ID = [{upload_id}]")
         upload_completed = True
     else:
         upload_completed = False
-        upload_id = response.json()['upload_id']
         logger.error(f'Upload [{upload_id}] failed with code [{response.json()}]')
     return upload_completed
 
