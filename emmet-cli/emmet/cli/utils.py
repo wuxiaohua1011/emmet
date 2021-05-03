@@ -1,46 +1,45 @@
-import os
-import stat
-import mgzip
-import click
-import shutil
-import logging
-import itertools
-import multiprocessing
-
-from enum import Enum
-from glob import glob
-from fnmatch import fnmatch
-from datetime import datetime
-from collections import defaultdict
-from pymatgen import Structure
-from atomate.vasp.database import VaspCalcDb
-from fireworks.fw_config import FW_BLOCK_FORMAT
-from mongogrant.client import Client
-from atomate.vasp.drones import VaspDrone
-from pymongo.errors import DocumentTooLarge
-from dotty_dict import dotty
-
-from emmet.core.utils import group_structures
-from emmet.cli import SETTINGS
 import hashlib
-from _hashlib import HASH as Hash
-from typing import Union
-from pathlib import Path
-from typing import List, Dict
-import tarfile
+import itertools
 import json
-import subprocess, shlex
-from pydantic import BaseModel, Field
-from typing import List, Dict, Set, Any, Optional, Tuple
-from maggma.stores.advanced_stores import MongograntStore
-from maggma.core.store import Sort
-from bravado.requests_client import RequestsClient, Authenticator
-from bravado.client import SwaggerClient
-from keycloak import KeycloakOpenID
-from urllib.parse import urlparse
+import logging
+import multiprocessing
+import os
+import shutil
+import stat
+import tarfile
 import time
+from _hashlib import HASH as Hash
+from collections import defaultdict
+from datetime import datetime
+from enum import Enum
+from fnmatch import fnmatch
+from glob import glob
+from pathlib import Path
+from typing import List, Dict, Any, Optional, Tuple
+from typing import Union
+from urllib.parse import urlparse
 from zipfile import ZipFile, ZIP_DEFLATED
+
+import click
+import mgzip
+from atomate.vasp.database import VaspCalcDb
+from atomate.vasp.drones import VaspDrone
+from bravado.client import SwaggerClient
+from bravado.requests_client import RequestsClient, Authenticator
+import requests
+from dotty_dict import dotty
+from emmet.core.utils import group_structures
+from fireworks.fw_config import FW_BLOCK_FORMAT
+from keycloak import KeycloakOpenID
+from maggma.core.store import Sort
+from maggma.stores.advanced_stores import MongograntStore
+from mongogrant.client import Client
+from pydantic import BaseModel, Field
+from pymatgen import Structure
+from pymongo.errors import DocumentTooLarge
 from tqdm import tqdm
+
+from emmet.cli import SETTINGS
 
 logger = logging.getLogger("emmet")
 perms = stat.S_IRUSR | stat.S_IWUSR | stat.S_IRGRP | stat.S_IWGRP
@@ -660,6 +659,19 @@ def nomad_upload_data(task_ids: List[str], username: str,
     # upload to nomad
     logger.info(f"[{name}] Start Uploading [{zipped_upload_preparation_file_path}]"
                 f"[{os.path.getsize(zipped_upload_preparation_file_path)} bytes] to NOMAD")
+    user = client.auth.get_auth().response().result
+    token = user.access_token
+    url = nomad_url + '/uploads/?publish_directly=true'
+    with open(zipped_upload_preparation_file_path, 'rb') as f:
+        response = requests.put(url=url, headers={'Authorization': 'Bearer %s' % token}, data=f)
+    if response.status_code == 200:
+        upload_completed = True
+    else:
+        upload_completed = False
+        upload_id = response.json()['upload_id']
+        logger.error(f'Upload [{upload_id}] failed with code [{response.json()}]')
+    return upload_completed
+
     # with open(zipped_upload_preparation_file_path, 'rb') as f:
     #     upload = client.uploads.upload(file=f, publish_directly=True).response().result
     #
@@ -691,7 +703,6 @@ def nomad_upload_data(task_ids: List[str], username: str,
     #     os.remove(zipped_upload_preparation_file_path)
 
     # return upload_completed
-    return True
 
 def nomad_organize_data(task_ids, records, root_dir: Path, upload_preparation_dir: Path, name):
     # loop over records, generate json & pack into zip &
