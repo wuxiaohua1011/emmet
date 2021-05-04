@@ -15,7 +15,7 @@ from enum import Enum
 from fnmatch import fnmatch
 from datetime import datetime
 from collections import defaultdict
-from pymatgen import Structure
+from pymatgen.core import Structure
 from pymatgen.util.provenance import StructureNL
 from glob import glob
 from pathlib import Path
