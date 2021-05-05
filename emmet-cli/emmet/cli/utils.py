@@ -671,7 +671,7 @@ def nomad_upload_data(task_ids: List[str], username: str,
     else:
         upload_completed = False
         logger.error(f'Upload [{upload_id}] failed with code [{response.json()}]')
-    return upload_completed
+    # return upload_completed
 
     # with open(zipped_upload_preparation_file_path, 'rb') as f:
     #     upload = client.uploads.upload(file=f, publish_directly=True).response().result
@@ -690,20 +690,20 @@ def nomad_upload_data(task_ids: List[str], username: str,
     #     logger.info(f"[{name}] Upload completed")
     #     upload_completed = True
     #
-    # if upload_completed:
-    #     # update mongo store
-    #     for record in records:
-    #         record.nomad_updated = datetime.now()
-    #         record.nomad_upload_id = upload.upload_id
-    #     gdrive_mongo_store.update(docs=[record.dict() for record in records], key="task_id")
-    #
-    # # clean up
-    # if upload_preparation_dir.exists():
-    #     shutil.rmtree(upload_preparation_dir.as_posix())
-    # if Path(zipped_upload_preparation_file_path).exists():
-    #     os.remove(zipped_upload_preparation_file_path)
+    if upload_completed:
+        # update mongo store
+        for record in records:
+            record.nomad_updated = datetime.now()
+            record.nomad_upload_id = upload_id
+        gdrive_mongo_store.update(docs=[record.dict() for record in records], key="task_id")
 
-    # return upload_completed
+    # clean up
+    if upload_preparation_dir.exists():
+        shutil.rmtree(upload_preparation_dir.as_posix())
+    if Path(zipped_upload_preparation_file_path).exists():
+        os.remove(zipped_upload_preparation_file_path)
+
+    return upload_completed
 
 def nomad_organize_data(task_ids, records, root_dir: Path, upload_preparation_dir: Path, name):
     # loop over records, generate json & pack into zip &
