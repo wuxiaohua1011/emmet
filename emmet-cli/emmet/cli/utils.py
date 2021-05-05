@@ -580,7 +580,7 @@ def nomad_find_not_uploaded(gdrive_mongo_store: MongograntStore, num: int) -> Li
         )
 
     meta_datas = [r for r in raw]
-    single_max_nomad_upload_size = 16 * 1e9  # max is 32 gb doing debugging sessions now
+    single_max_nomad_upload_size = 32 * 1e9  # max is 32 gb doing debugging sessions now
     tmp_results: Dict[int, List[str]] = dict()
     total_size = 0
     result_counter = 0
