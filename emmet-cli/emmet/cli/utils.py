@@ -626,7 +626,7 @@ def nomad_upload_data(task_ids: List[str], username: str,
     """
     logger.info(f"[{name}] start processing [{len(task_ids)}] tasks")
     # create the bravado client
-    nomad_url = 'http://nomad-lab.eu/prod/rae/mp/api'
+    nomad_url = 'http://nomad-lab.eu/prod/rae/api'
     http_client = RequestsClient()
     http_client.authenticator = KeycloakAuthenticator(user=username, password=password, nomad_url=nomad_url)
     client: SwaggerClient = SwaggerClient.from_url('%s/swagger.json' % nomad_url, http_client=http_client)
@@ -671,25 +671,7 @@ def nomad_upload_data(task_ids: List[str], username: str,
     else:
         upload_completed = False
         logger.error(f'Upload [{upload_id}] failed with code [{response.json()}]')
-    # return upload_completed
 
-    # with open(zipped_upload_preparation_file_path, 'rb') as f:
-    #     upload = client.uploads.upload(file=f, publish_directly=True).response().result
-    #
-    # while upload.tasks_running:
-    #     upload = client.uploads.get_upload(upload_id=upload.upload_id).response().result
-    #     time.sleep(5)
-    #     logger.info(f'[{name}] processed: %d, failures: %d' % (upload.processed_calcs, upload.failed_calcs))
-    #
-    # if upload.tasks_status != 'SUCCESS':
-    #     logger.error(f'[{name}] something went wrong, errors: %s' % str(upload.errors))
-    #     # try to delete the unsuccessful upload
-    #     client.uploads.delete_upload(upload_id=upload.upload_id).response().result
-    #     upload_completed = False
-    # else:
-    #     logger.info(f"[{name}] Upload completed")
-    #     upload_completed = True
-    #
     if upload_completed:
         # update mongo store
         for record in records:
