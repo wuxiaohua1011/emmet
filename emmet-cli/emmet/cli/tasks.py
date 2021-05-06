@@ -355,6 +355,15 @@ def restore(inputfile, file_filter):  # noqa: C901
     help="Directory of blocks to upload to GDrive, relative to ('directory') ex: compressed",
 )
 def upload(input_dir):
+    """
+    Use [rclone](https://rclone.org/drive/) to upload blocks to GDrive
+
+    NOTE: rclone makes sure that duplicate upload will overwrite each other instead of creating redundancy.
+
+    :param input_dir:  Directory of blocks to upload to GDrive
+    :return:
+        Success code
+    """
     ctx = click.get_current_context()
     run = ctx.parent.parent.params["run"]
     nmax = ctx.parent.params["nmax"]
@@ -419,6 +428,14 @@ def upload(input_dir):
     help="Number of processes for parallel parsing.",
 )
 def compress(input_dir, output_dir, nproc):
+    """
+    Find all blocks in the input_dir, compress them, put them in the ouput_dir
+
+    :param input_dir: Directory of blocks to compress
+    :param output_dir: Directory of blocks to output the compressed blocks
+    :param nproc: Number of processes for parallel parsing
+    :return:
+    """
     ctx = click.get_current_context()
     run = ctx.parent.parent.params["run"]
     directory = ctx.parent.params["directory"]
@@ -620,6 +637,21 @@ def parse(task_ids, snl_metas, nproc, store_volumetric_data):  # noqa: C901
     help="maximum number of materials to query"
 )
 def upload_latest(mongo_configfile, num_materials):
+    """
+    upload latest materials to GDrive following the below steps
+    1. Find task_ids that has not been uploaded. Find them in the order of newest material
+    2. Restore those launchers using the emmet/restore command
+    3. use rclone to move restored launchers to another folder for staging
+    4. zip the moved launchers
+    5. upload the zipped launchers
+    6. move the zipped launchers to tmp_storage for later upload to nomad
+    7. clean the restore, raw, compressed folders
+
+    :param mongo_configfile: mongo db connections. Path should be full path
+    :param num_materials: maximum number of materials to query
+    :return:
+        Success code
+    """
     ctx = click.get_current_context()
     run = ctx.parent.parent.params["run"]
     directory = ctx.parent.params["directory"]
@@ -696,6 +728,13 @@ def upload_latest(mongo_configfile, num_materials):
 )
 @sbatch
 def clear_uploaded(mongo_configfile):
+    """
+    Clear the uploaded files (to both Gdrive and NOMAD) from tmp_storage.
+
+    :param mongo_configfile: mongo db connections. Path should be full path
+    :return:
+        Success code
+    """
     ctx = click.get_current_context()
     run = ctx.parent.parent.params["run"]
     directory = ctx.parent.params["directory"]
@@ -774,6 +813,17 @@ def clear_uploaded(mongo_configfile):
     help="mongo db connections. Path should be full path."
 )
 def upload_to_nomad(nomad_configfile, num, mongo_configfile):
+    """
+    upload n launchers to NOMAD using the following procedure
+    1. Find n launchers and split them into 10 threads
+    2. upload those n launchers and remove the generated .tar.gz file
+
+    :param nomad_configfile: nomad user name and password json file path.
+    :param num: maximum number of materials to upload
+    :param mongo_configfile: mongo db connections
+    :return:
+        Success code
+    """
     configfile: Path = Path(mongo_configfile)
     full_nomad_config_path: Path = Path(nomad_configfile).expanduser()
     num: int = num
@@ -822,6 +872,14 @@ def upload_to_nomad(nomad_configfile, num, mongo_configfile):
 
 
 def run_and_log_info(args, filelist=None):
+    """
+    Run the run_command function and log it to logger.
+
+    :param args: arguments to execute
+    :param filelist: file list to pass in
+    :return:
+        none
+    """
     if filelist is None:
         filelist = []
     run_outputs = run_command(args=args, filelist=filelist)
