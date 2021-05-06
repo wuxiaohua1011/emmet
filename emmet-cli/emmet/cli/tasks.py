@@ -393,7 +393,7 @@ def upload(input_dir):
     "--input-dir",
     required=True,
     type=click.Path(),
-    help="Directory of blocks to compress, relative to ('directory') ex: raw`",
+    help="Directory of blocks to compress, relative to ('directory') ex: raw",
 )
 @click.option(
     "-o",
