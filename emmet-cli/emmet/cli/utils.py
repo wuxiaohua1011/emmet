@@ -544,6 +544,14 @@ class File(BaseModel):
 
 
 def move_dir(src: str, dst: str, pattern: str):
+    """
+    Move entire directory matching pattern from src to dst
+    :param src: src location
+    :param dst: dst location
+    :param pattern: folder patterns
+    :return:
+        none
+    """
     for file_path in glob(f'{src}/{pattern}'):
         logger.info(f"Moving [{file_path}] to [{dst}]")
         try:
@@ -555,16 +563,18 @@ def move_dir(src: str, dst: str, pattern: str):
 
 def nomad_find_not_uploaded(gdrive_mongo_store: MongograntStore, num: int) -> List[List[str]]:
     """
-    1. find a list of tasks that are not uploaded to nomad, sort ascending based on date created. limit by num
+    find a list of tasks that are not uploaded to nomad, sort ascending based on date created. limit by num.
+    chunk those list of tasks into 10 chunks for later multi processing.
 
-    if num < 0, return 32 GB worth of materials
+    if num < 0, return 32 GB worth of materials in each chunk
 
     :param gdrive_mongo_store:
-    :param username:
-    :param password:
-    :param num:
+    :param num: number of launchers to find
     :return:
+        List of chunks with a total of n launchers or each with max 32 GB of launchers file path
     """
+
+    # fetch meta data of un-uploaded launchers from GDrive
     if num >= 0:
         raw = gdrive_mongo_store.query(
             criteria={"$and": [{"nomad_updated": None}, {"error": None}]},
@@ -586,6 +596,8 @@ def nomad_find_not_uploaded(gdrive_mongo_store: MongograntStore, num: int) -> Li
     result_counter = 0
     curr_size = 0
     max_chunks = 10
+
+    # loop through all meta data, fill in each chunk with as much data as possible
     for meta_data in meta_datas:
         if result_counter >= max_chunks:
             break
@@ -602,6 +614,7 @@ def nomad_find_not_uploaded(gdrive_mongo_store: MongograntStore, num: int) -> Li
                 curr_size += file_size
                 total_size += file_size
 
+    # expand the dictionary to a list
     results = [result for result in tmp_results.values()]
 
     logger.info(f"Prepared [{len(results)}] chunks with [{sum([len(r) for r in results])}] items [{total_size}] bytes")
@@ -625,7 +638,7 @@ def nomad_upload_data(task_ids: List[str], username: str,
         None or False otherwise
     """
     logger.info(f"[{name}] start processing [{len(task_ids)}] tasks")
-    # create the bravado client
+    # create the bravado client and establish credential
     nomad_url = 'http://nomad-lab.eu/prod/rae/api'
     http_client = RequestsClient()
     http_client.authenticator = KeycloakAuthenticator(user=username, password=password, nomad_url=nomad_url)
@@ -633,7 +646,6 @@ def nomad_upload_data(task_ids: List[str], username: str,
 
     raw = gdrive_mongo_store.query(criteria={"task_id": {"$in": task_ids}})
     records: List[GDriveLog] = [GDriveLog.parse_obj(record) for record in raw]
-    # logger.info(f"Uploading the following tasks to NOMAD: \n{task_ids}")
 
     # prepare upload data
     upload_preparation_dir = root_dir / Path(f"nomad_upload_{name}_{datetime.now().strftime('%m_%d_%Y')}")
@@ -672,8 +684,8 @@ def nomad_upload_data(task_ids: List[str], username: str,
         upload_completed = False
         logger.error(f'Upload [{upload_id}] failed with code [{response.json()}]')
 
+    # update mongo store
     if upload_completed:
-        # update mongo store
         for record in records:
             record.nomad_updated = datetime.now()
             record.nomad_upload_id = upload_id
@@ -687,8 +699,9 @@ def nomad_upload_data(task_ids: List[str], username: str,
 
     return upload_completed
 
+
 def nomad_organize_data(task_ids, records, root_dir: Path, upload_preparation_dir: Path, name):
-    # loop over records, generate json & pack into zip &
+    # loop over records, generate json information
     nomad_json: dict = {"comment": f"Materials Project Upload at {datetime.now()}",
                         "external_db": "Materials Project",
                         "entries": dict()}
@@ -696,7 +709,22 @@ def nomad_organize_data(task_ids, records, root_dir: Path, upload_preparation_di
     untar_source_file_path_to_arcname_map: List[
         Tuple[str, str]] = list()  # list of (full_path/launcher-xyz.tar.gz launcher-xyz.tar.gz)
     logger.info(f"[{name}] Organizing {len(task_ids)} launchers")
-    
+
+    """
+    for every record, build a entry in our log later used to populate nomad.json
+    nomad.json will look like:
+    {
+    "comment": "Data from a cool external project",
+    "external_db": "Materials Project",
+    "entries": {
+        "block_2017-11-15-20-03-23-693030/launcher_2017-11-18-00-38-32-702369/launcher_2017-11-18-02-22-11-552158/vasprun.xml.gz" : {
+            "external_id" : "michael-2",
+            "references": ["https://materialsproject.org/tasks/michael-2/"]
+            },
+            ...
+        }
+    }
+    """
     for record in tqdm(records):
         full_path_without_suffix: Path = root_dir / record.path
         full_file_path: Path = (root_dir / (record.path + ".tar.gz"))
@@ -725,6 +753,17 @@ def nomad_organize_data(task_ids, records, root_dir: Path, upload_preparation_di
 
 
 def write_zip_from_targz(untar_source_file_path_to_arcname_map, upload_preparation_dir: Path, name) -> str:
+    """
+
+    1. unzip the source_file_path (which is pointing to a .zip file) using  the arcname to the upload_prearation_dir
+    2. tar.gz  the entire upload_preparation_dir
+    :param untar_source_file_path_to_arcname_map: file_path -> arcname mapping
+    :param upload_preparation_dir: directoryt o unzip and tar.gz files
+    :param name: name of the thread used
+
+    :return:
+        zip the entire upload_preparation_dir
+    """
     logger.info(f"[{name}] Extracting Files")
     for full_file_path, block_name in tqdm(untar_source_file_path_to_arcname_map):
         tar = tarfile.open(full_file_path, "r:gz")
@@ -759,12 +798,14 @@ def write_json(upload_preparation_dir, nomad_json, name):
     logger.info(f"[{name}] NOMAD JSON prepared")
 
 
-def nomad_upload_helper(client, file):
-    upload = client.uploads.upload(file=file, publish_directly=True).response().result
-    return upload
-
-
 def md5_update_from_file(filename: Union[str, Path], hash: Hash) -> Hash:
+    """
+    Produce hash of the file
+    :param filename: name if file to hash
+    :param hash: previous hash
+    :return:
+        hash
+    """
     assert Path(filename).is_file()
     with open(str(filename), "rb") as f:
         for chunk in iter(lambda: f.read(4096), b""):
@@ -777,6 +818,13 @@ def md5_file(filename: Union[str, Path]) -> str:
 
 
 def md5_update_from_dir(directory: Union[str, Path], hash: Hash) -> Hash:
+    """
+    Hash directory
+    :param directory: directory to hash
+    :param hash: previous hash
+    :return:
+        hash
+    """
     assert Path(directory).is_dir()
     for path in sorted(Path(directory).iterdir(), key=lambda p: str(p).lower()):
         hash.update(path.name.encode())
@@ -789,7 +837,6 @@ def md5_update_from_dir(directory: Union[str, Path], hash: Hash) -> Hash:
 
 def md5_dir(directory: Union[str, Path]) -> str:
     """
-    TODO ask patrick how does he want me to expose it?
     :param directory: directory to compute md5 hash on
     :return:
         the hash in string
@@ -945,17 +992,12 @@ def find_unuploaded_launcher_paths(outputfile, configfile, num) -> List[GDriveLo
 
 def log_to_mongodb(mongo_configfile: str, task_records: List[GDriveLog], raw_dir: Path, compress_dir: Path):
     """
-    # find the reference launcher of the launcher.tar.gz
-    # sort filename by alphabetically, loop through every file, keep a "global" md5
-        # on every file, compute size, & md5hash of content of the file
-        # update global md5hash
-    # get the "global" md5
-    # find total filesize of the launcher.tar.gz
+    log task_records to mongodb. Filling in hash information each record
 
-    :param compress_dir:
-    :param raw_dir:
-    :param mongo_configfile:
-    :param task_records:
+    :param mongo_configfile: mongo connection file location
+    :param task_records: task_records to upload
+    :param raw_dir: raw_directory
+    :param compress_dir: compressed file directory
     :return:
     """
     configfile: Path = Path(mongo_configfile)
