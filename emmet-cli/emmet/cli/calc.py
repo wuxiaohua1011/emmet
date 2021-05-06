@@ -10,12 +10,11 @@ from bson.errors import InvalidBSON
 from collections import defaultdict
 from zipfile import ZipFile
 from fnmatch import fnmatch
-from pymatgen import Structure
+from pymatgen.core import Structure
 from pymatgen.alchemy.materials import TransformedStructure
 from pymatgen.util.provenance import StructureNL, Author
 
 from emmet.core.utils import group_structures, get_sg
-from emmet.core.vasp.calc_types import task_type
 from emmet.cli import SETTINGS
 from emmet.cli.utils import calcdb_from_mgrant, aggregate_by_formula, structures_match
 from emmet.cli.utils import get_meta_from_structure, load_structure
@@ -37,6 +36,8 @@ def get_format(fname):
 
 
 def load_canonical_structures(ctx, full_name, formula):
+    from emmet.core.vasp.calc_types import task_type  # TODO import error
+
     collection = ctx.obj["COLLECTIONS"][full_name]
 
     if formula not in canonical_structures[full_name]:
@@ -169,7 +170,7 @@ def calc(ctx, specs, nmax, skip):
     help="Author to assign to all structures.",
 )
 @click.pass_context
-def prep(ctx, archive, authors):
+def prep(ctx, archive, authors):  # noqa: C901
     """prep structures from an archive for submission"""
     run = ctx.obj["RUN"]
     collections = ctx.obj["COLLECTIONS"]

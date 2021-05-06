@@ -56,20 +56,19 @@ def test_validator(tasks):
     assert all(doc.valid for doc in validation_docs)
 
 
-def test_sandboxing():
-
-    test_doc = TaskDocument(task_id="test")
-    assert test_doc.sandboxes == ["core"]
-
-    SETTINGS.TAGS_TO_SANDBOXES = {"test_sbxn": ["test"]}
-    test_doc = TaskDocument(task_id="test", tags=["test"])
-    assert test_doc.sandboxes == ["test_sbxn"]
-
-    test_doc = TaskDocument(task_id="test", tags=["test"], sandboxes=["test_selected"])
-    assert test_doc.sandboxes == ["test_selected"]
-
-
 def test_computed_entry(tasks):
     entries = [task.entry for task in tasks]
     ids = {e.entry_id for e in entries}
     assert ids == {"mp-1141021", "mp-149", "mp-1686587", "mp-1440634"}
+
+
+@pytest.fixture(scope="session")
+def task_ldau(test_dir):
+    with zopen(test_dir / "test_task.json") as f:
+        data = json.load(f)
+
+    return TaskDocument(**data)
+
+
+def test_ldau(task_ldau):
+    assert ValidationDoc.from_task_doc(task_ldau).valid is False

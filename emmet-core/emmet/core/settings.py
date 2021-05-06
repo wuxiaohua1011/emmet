@@ -1,22 +1,24 @@
 """
-This file defines any arbitrary global variables used in Materials Project
-database building and in the website code, to ensure consistency between
-different modules and packages.
+Settings for defaults in the core definitions of Materials Project Documents
 """
 import importlib
 import json
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Type, TypeVar, Union
 
 import requests
 from pydantic import BaseSettings, Field, root_validator, validator
-from pydantic.types import Path
+from pydantic.types import Path, PyObject
 
 DEFAULT_CONFIG_FILE_PATH = str(Path.home().joinpath(".emmet.json"))
+
+
+S = TypeVar("S", bound="EmmetSettings")
 
 
 class EmmetSettings(BaseSettings):
     """
     Settings for the emmet- packages
+    Non-core packages should subclass this to get settings specific to their needs
     The default way to modify these is to modify ~/.emmet.json or set the environment variable
     EMMET_CONFIG_FILE to point to the json with emmet settings
     """
@@ -45,15 +47,6 @@ class EmmetSettings(BaseSettings):
         description="Maximum miller allowed for computing strain direction for maximal piezo response",
     )
 
-    TAGS_TO_SANDBOXES: Optional[Dict[str, List[str]]] = Field(
-        None,
-        description="Mapping of calcuation tags to sandboxes: Dict[sandbox, list of tags]."
-        " Any calculation without these tags will be kept as core.",
-    )
-
-    VASP_SPECIAL_TAGS: List[str] = Field(
-        ["LASPH"], description="Special tags to prioritize for VASP Task Documents"
-    )
     VASP_QUALITY_SCORES: Dict[str, int] = Field(
         {"SCAN": 3, "GGA+U": 2, "GGA": 1},
         description="Dictionary Mapping VASP calculation run types to rung level for VASP materials builders",
@@ -64,7 +57,12 @@ class EmmetSettings(BaseSettings):
         description="Relative tolerance for kpt density to still be a valid task document",
     )
 
-    VASP_DEFAULT_INPUT_SETS: Dict = Field(
+    VASP_KSPACING_TOLERANCE: float = Field(
+        0.05,
+        description="Relative tolerance for kspacing to still be a valid task document",
+    )
+
+    VASP_DEFAULT_INPUT_SETS: Dict[str, PyObject] = Field(
         {
             "GGA Structure Optimization": "pymatgen.io.vasp.sets.MPRelaxSet",
             "GGA+U Structure Optimization": "pymatgen.io.vasp.sets.MPRelaxSet",
@@ -74,6 +72,11 @@ class EmmetSettings(BaseSettings):
 
     VASP_CHECKED_LDAU_FIELDS: List[str] = Field(
         ["LDAUU", "LDAUJ", "LDAUL"], description="LDAU fields to validate for tasks"
+    )
+
+    VASP_MAX_SCF_GRADIENT: float = Field(
+        100,
+        description="Maximum upward gradient in the last SCF for any VASP calculation",
     )
 
     class Config:
@@ -100,15 +103,23 @@ class EmmetSettings(BaseSettings):
 
         return new_values
 
-    @validator("VASP_DEFAULT_INPUT_SETS", pre=True)
-    def load_input_sets(cls, values):
-        input_sets = {}
-        for name, inp_set in values.items():
-            if isinstance(inp_set, str):
-                _module = ".".join(inp_set.split(".")[:-1])
-                _class = inp_set.split(".")[-1]
-                input_sets[name] = getattr(importlib.import_module(_module), _class)
-            elif isinstance(inp_set, type):
-                input_sets[name] = inp_set
+    @classmethod
+    def autoload(cls: Type[S], settings: Union[None, dict, S]) -> S:
+        if settings is None:
+            return cls()
+        elif isinstance(settings, dict):
+            return cls(**settings)
+        return settings
 
-        return input_sets
+    def as_dict(self):
+        """
+        HotPatch to enable serializing EmmetSettings via Monty
+        """
+        return self.dict(exclude_unset=True, exclude_defaults=True)
+
+    @classmethod
+    def from_dict(cls: Type[S], settings: Dict) -> S:
+        """
+        HotPatch to enable serializing EmmetSettings via Monty
+        """
+        return cls(**settings)

@@ -5,17 +5,19 @@ from typing import Dict, Iterator, List, Optional
 
 from maggma.builders import Builder
 from maggma.stores import Store
-from pymatgen import Structure
+from pymatgen.core import Structure
 from pymatgen.analysis.structure_analyzer import oxide_type
 from pymatgen.analysis.structure_matcher import ElementComparator, StructureMatcher
 
 from emmet.builders.utils import maximal_spanning_non_intersecting_subsets
-from emmet.core import SETTINGS
+
+# from emmet.core import SETTINGS
+from emmet.builders import SETTINGS
+from emmet.builders.settings import EmmetBuildSettings
 from emmet.core.utils import group_structures, jsanitize
 from emmet.core.vasp.calc_types import TaskType
 from emmet.core.vasp.material import MaterialsDoc
 from emmet.core.vasp.task import TaskDocument
-from emmet.stubs import ComputedEntry
 
 __author__ = "Shyam Dwaraknath <shyamd@lbl.gov>"
 
@@ -45,41 +47,22 @@ class MaterialsBuilder(Builder):
         materials: Store,
         task_validation: Optional[Store] = None,
         query: Optional[Dict] = None,
-        allowed_task_types: Optional[List[str]] = None,
-        symprec: float = SETTINGS.SYMPREC,
-        ltol: float = SETTINGS.LTOL,
-        stol: float = SETTINGS.STOL,
-        angle_tol: float = SETTINGS.ANGLE_TOL,
+        settings: Optional[EmmetBuildSettings] = None,
         **kwargs,
     ):
         """
         Args:
             tasks: Store of task documents
             materials: Store of materials documents to generate
+            task_validation: Store for storing task validation results
             query: dictionary to limit tasks to be analyzed
-            allowed_task_types: list of task_types that can be processed
-            symprec: tolerance for SPGLib spacegroup finding
-            ltol: StructureMatcher tuning parameter for matching tasks to materials
-            stol: StructureMatcher tuning parameter for matching tasks to materials
-            angle_tol: StructureMatcher tuning parameter for matching tasks to materials
         """
 
         self.tasks = tasks
         self.materials = materials
         self.task_validation = task_validation
-        self.allowed_task_types = (
-            [t.value for t in TaskType]
-            if allowed_task_types is None
-            else allowed_task_types
-        )
-
-        self._allowed_task_types = {TaskType(t) for t in self.allowed_task_types}
-
         self.query = query if query else {}
-        self.symprec = symprec
-        self.ltol = ltol
-        self.stol = stol
-        self.angle_tol = angle_tol
+        self.settings = EmmetBuildSettings.autoload(settings)
         self.kwargs = kwargs
 
         sources = [tasks]
@@ -120,7 +103,7 @@ class MaterialsBuilder(Builder):
 
         self.logger.info("Materials builder started")
         self.logger.info(
-            f"Allowed task types: {[task_type.value for task_type in self._allowed_task_types]}"
+            f"Allowed task types: {[task_type.value for task_type in self.settings.VASP_ALLOWED_VASP_TYPES]}"
         )
 
         self.logger.info("Setting indexes")
@@ -132,6 +115,13 @@ class MaterialsBuilder(Builder):
         # Get all processed tasks:
         temp_query = dict(self.query)
         temp_query["state"] = "successful"
+        if len(self.settings.BUILD_TAGS) > 0 and len(self.settings.EXCLUDED_TAGS) > 0:
+            temp_query["$and"] = [
+                {"tags": {"$in": self.settings.BUILD_TAGS}},
+                {"tags": {"$nin": self.settings.EXCLUDED_TAGS}},
+            ]
+        elif len(self.settings.BUILD_TAGS) > 0:
+            temp_query["tags"] = {"$in": self.settings.BUILD_TAGS}
 
         self.logger.info("Finding tasks to process")
         all_tasks = {
@@ -157,7 +147,7 @@ class MaterialsBuilder(Builder):
             invalid_ids = {
                 doc[self.tasks.key]
                 for doc in self.task_validation.query(
-                    {"is_valid": False}, [self.task_validation.key]
+                    {"valid": False}, [self.task_validation.key]
                 )
             }
         else:
@@ -169,8 +159,12 @@ class MaterialsBuilder(Builder):
             "task_id",
             "formula_pretty",
             "output.energy_per_atom",
+            "output.energy",
             "output.structure",
             "input.parameters",
+            "input.is_hubbard",
+            "input.hubbards",
+            "input.potcar_spec",
             "orig_inputs",
             "input.structure",
             "tags",
@@ -206,10 +200,17 @@ class MaterialsBuilder(Builder):
         task_ids = [task.task_id for task in tasks]
         self.logger.debug(f"Processing {formula} : {task_ids}")
 
-        materials = []
         grouped_tasks = self.filter_and_group_tasks(tasks)
-
-        materials = [MaterialsDoc.from_tasks(group) for group in grouped_tasks]
+        materials = []
+        for group in grouped_tasks:
+            try:
+                materials.append(MaterialsDoc.from_tasks(group))
+            except Exception:
+                failed_ids = list({t_.task_id for t_ in group})
+                self.logger.warn(
+                    f"No valid ids found among ids {failed_ids}. This can be the case if the required "
+                    "calculation types are missing from your tasks database."
+                )
         self.logger.debug(f"Produced {len(materials)} materials for {formula}")
 
         return [mat.dict() for mat in materials]
@@ -235,7 +236,7 @@ class MaterialsBuilder(Builder):
             self.materials.remove_docs({self.materials.key: {"$in": material_ids}})
             self.materials.update(
                 docs=jsanitize(items, allow_bson=True),
-                key=["material_id", "sandboxes"],
+                key=["material_id"],
             )
         else:
             self.logger.info("No items to update")
@@ -250,7 +251,7 @@ class MaterialsBuilder(Builder):
             for task in tasks
             if any(
                 allowed_type is task.task_type
-                for allowed_type in self._allowed_task_types
+                for allowed_type in self.settings.VASP_ALLOWED_VASP_TYPES
             )
         ]
 
@@ -263,19 +264,11 @@ class MaterialsBuilder(Builder):
 
         grouped_structures = group_structures(
             structures,
-            ltol=self.ltol,
-            stol=self.stol,
-            angle_tol=self.angle_tol,
-            symprec=self.symprec,
+            ltol=self.settings.LTOL,
+            stol=self.settings.STOL,
+            angle_tol=self.settings.ANGLE_TOL,
+            symprec=self.settings.SYMPREC,
         )
-
         for group in grouped_structures:
             grouped_tasks = [filtered_tasks[struc.index] for struc in group]
-            sandboxes = {frozenset(task.sandboxes) for task in grouped_tasks}
-
-            for sbx_set in maximal_spanning_non_intersecting_subsets(sandboxes):
-                yield [
-                    task
-                    for task in grouped_tasks
-                    if len(set(task.sandboxes).intersection(sbx_set)) > 0
-                ]
+            yield grouped_tasks

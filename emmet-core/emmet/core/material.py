@@ -7,9 +7,10 @@ from typing import ClassVar, Mapping, Optional, Sequence, Type, TypeVar, Union
 
 from pydantic import BaseModel, Field, create_model
 from pymatgen.analysis.magnetism import CollinearMagneticStructureAnalyzer, Ordering
+from pymatgen.core import Structure
 
+from emmet.core.mpid import MPID
 from emmet.core.structure import StructureMetadata
-from emmet.stubs import Structure
 
 
 class PropertyOrigin(BaseModel):
@@ -18,64 +19,13 @@ class PropertyOrigin(BaseModel):
     """
 
     name: str = Field(..., description="The property name")
-    task_id: str = Field(..., description="The calculation ID this property comes from")
+    task_id: MPID = Field(
+        ..., description="The calculation ID this property comes from"
+    )
     last_updated: datetime = Field(
         description="The timestamp when this calculation was last updated",
         default_factory=datetime.utcnow,
     )
-
-
-S = TypeVar("S", bound="PropertyDoc")
-
-
-class PropertyDoc(StructureMetadata):
-    """
-    Base model definition for any singular materials property. This may contain any amount
-    of structure metadata for the purpose of search
-    This is intended to be inherited and extended not used directly
-    """
-
-    property_name: ClassVar[str]
-    material_id: str = Field(
-        ...,
-        description="The ID of the material, used as a universal reference across proeprty documents."
-        "This comes in the form: mp-******",
-    )
-
-    last_updated: datetime = Field(
-        description="Timestamp for the most recent calculation update for this property",
-        default_factory=datetime.utcnow,
-    )
-
-    origins: Sequence[PropertyOrigin] = Field(
-        [], description="Dictionary for tracking the provenance of properties"
-    )
-
-    warnings: Sequence[str] = Field(
-        None, description="Any warnings related to this property"
-    )
-
-    sandboxes: Sequence[str] = Field(
-        ["core"],
-        description="List of sandboxes this property belongs to."
-        " Sandboxes provide a way of controlling access to materials."
-        " No sandbox means this materials is openly visible",
-    )
-
-    @classmethod
-    def from_structure(  # type: ignore[override]
-        cls: Type[S], structure: Structure, material_id: str, **kwargs
-    ) -> S:
-        """
-        Builds a materials document using the minimal amount of information
-        """
-
-        return super().from_structure(  # type: ignore
-            structure=structure,
-            material_id=material_id,
-            include_structure=False,
-            **kwargs
-        )
 
 
 T = TypeVar("T", bound="MaterialsDoc")
@@ -87,10 +37,10 @@ class MaterialsDoc(StructureMetadata):
     """
 
     # Only material_id is required for all documents
-    material_id: str = Field(
+    material_id: MPID = Field(
         ...,
         description="The ID of this material, used as a universal reference across proeprty documents."
-        "This comes in the form: mp-******",
+        "This comes in the form and MPID or int",
     )
 
     structure: Structure = Field(
@@ -107,7 +57,7 @@ class MaterialsDoc(StructureMetadata):
         description="Initial structures used in the DFT optimizations corresponding to this material",
     )
 
-    task_ids: Sequence[str] = Field(
+    task_ids: Sequence[MPID] = Field(
         [],
         title="Calculation IDs",
         description="List of Calculations IDs used to make this Materials Document",
@@ -138,16 +88,9 @@ class MaterialsDoc(StructureMetadata):
         [], description="Any warnings related to this material"
     )
 
-    sandboxes: Sequence[str] = Field(
-        ["core"],
-        description="List of sandboxes this material belongs to."
-        " Sandboxes provide a way of controlling access to materials."
-        " Core is the primary sandbox for fully open documents",
-    )
-
     @classmethod
     def from_structure(  # type: ignore[override]
-        cls: Type[T], structure: Structure, material_id: str, **kwargs
+        cls: Type[T], structure: Structure, material_id: MPID, **kwargs
     ) -> T:
         """
         Builds a materials document using the minimal amount of information

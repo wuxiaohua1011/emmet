@@ -14,7 +14,7 @@ from pymatgen.core.structure import Structure
 from typing_extensions import Literal
 
 from emmet.core import SETTINGS
-from emmet.core.vasp.calc_types.enums import RunType, TaskType, CalcType
+from emmet.core.vasp.calc_types.enums import CalcType, RunType, TaskType
 
 _RUN_TYPE_DATA = loadfn(str(Path(__file__).parent.joinpath("run_types.yaml").resolve()))
 
@@ -107,6 +107,9 @@ def task_type(
 
     elif incar.get("ISIF", 3) == 2 and incar.get("IBRION", 0) > 0:
         calc_type.append("Deformation")
+
+    if len(calc_type) == 0:
+        return TaskType("Unrecognized")
 
     return TaskType(" ".join(calc_type))
 

@@ -5,12 +5,13 @@ from typing import Dict, Iterator, List, Optional, Set, Tuple
 
 from maggma.core import Builder, Store
 from monty.json import MontyDecoder
-from pymatgen import Structure
-from pymatgen.analysis.phase_diagram import PhaseDiagram, PhaseDiagramError
+from pymatgen.core import Structure
+from pymatgen.analysis.phase_diagram import PhaseDiagramError
 from pymatgen.analysis.structure_analyzer import oxide_type
 from pymatgen.entries.compatibility import MaterialsProjectCompatibility
-from pymatgen.entries.computed_entries import ComputedEntry
+from pymatgen.entries.computed_entries import ComputedEntry, ComputedStructureEntry
 
+from emmet.core.utils import jsanitize
 from emmet.builders.utils import (
     chemsys_permutations,
     maximal_spanning_non_intersecting_subsets,
@@ -25,7 +26,6 @@ class Thermo(Builder):
         materials: Store,
         thermo: Store,
         query: Optional[Dict] = None,
-        use_statics: bool = False,
         compatibility=None,
         **kwargs,
     ):
@@ -38,7 +38,6 @@ class Thermo(Builder):
             thermo (Store): Store of thermodynamic data such as formation
                 energy and decomposition pathway
             query (dict): dictionary to limit materials to be analyzed
-            use_statics: Use the statics to compute thermodynamic information
             compatibility (PymatgenCompatability): Compatability module
                 to ensure energies are compatible
         """
@@ -51,7 +50,7 @@ class Thermo(Builder):
             if compatibility
             else MaterialsProjectCompatibility("Advanced")
         )
-        self._completed_tasks = {}
+        self._completed_tasks = set()
         self._entries_cache = defaultdict(list)
         super().__init__(sources=[materials], targets=[thermo], **kwargs)
 
@@ -62,7 +61,6 @@ class Thermo(Builder):
 
         # Search index for materials
         self.materials.ensure_index("material_id")
-        self.materials.ensure_index("sandboxes")
         self.materials.ensure_index("last_updated")
 
         # Search index for thermo
@@ -85,12 +83,12 @@ class Thermo(Builder):
         affected_chemsys = self.get_affected_chemsys(updated_chemsys | new_chemsys)
 
         # Remove overlapping chemical systems
-        to_process_chemsys = {}
+        to_process_chemsys = set()
         for chemsys in updated_chemsys | new_chemsys | affected_chemsys:
             if chemsys not in to_process_chemsys:
                 to_process_chemsys |= chemsys_permutations(chemsys)
 
-        self.logger.inf(
+        self.logger.info(
             f"Found {len(to_process_chemsys)} chemical systems with new/updated materials to process"
         )
         self.total = len(to_process_chemsys)
@@ -99,45 +97,27 @@ class Thermo(Builder):
         # Will build them in a similar manner to fast Pourbaix
         for chemsys in sorted(to_process_chemsys, key=lambda x: len(x.split("-"))):
             entries = self.get_entries(chemsys)
-
-            # build sandbox sets: ["a"] , ["a","b"], ["core","a","b"]
-            sandbox_sets = set(
-                [frozenset(entry.data.get("sandboxes", {})) for entry in entries]
-            )
-            sandbox_sets = maximal_spanning_non_intersecting_subsets(sandbox_sets)
-            self.logger.debug(f"Found {len(sandbox_sets)}: {sandbox_sets}")
-
-            for sandboxes in sandbox_sets:
-                # only yield maximal subsets so that we can process a equivalent sandbox combinations at a time
-                sandbox_entries = [
-                    entry
-                    for entry in entries
-                    if all(
-                        sandbox in entry.data.get("_sbxn", []) for sandbox in sandboxes
-                    )
-                ]
-
-                yield sandboxes, sandbox_entries
+            yield entries
 
     def process_item(self, item: Tuple[List[str], List[ComputedEntry]]):
 
-        sandboxes, entries = item
+        entries = item
+        if len(entries) == 0:
+            return []
 
-        entries = [ComputedEntry.from_dict(entry) for entry in entries]
+        entries = [ComputedStructureEntry.from_dict(entry) for entry in entries]
         # determine chemsys
         elements = sorted(
             set([el.symbol for e in entries for el in e.composition.elements])
         )
         chemsys = "-".join(elements)
 
-        self.logger.debug(
-            f"Procesing {len(entries)} entries for {chemsys} - {sandboxes}"
-        )
+        self.logger.debug(f"Processing {len(entries)} entries for {chemsys}")
 
-        material_entries = defaultdict(defaultdict(list))
+        material_entries = defaultdict(dict)
         pd_entries = []
         for entry in entries:
-            material_entries[entry.entry_id][entry.data["run_type"]].append(entry)
+            material_entries[entry.entry_id][entry.data["run_type"]] = entry
 
         # TODO: How to make this general and controllable via SETTINGS?
         for material_id in material_entries:
@@ -145,11 +125,11 @@ class Thermo(Builder):
                 pd_entries.append(material_entries[material_id]["GGA+U"])
             elif "GGA" in material_entries[material_id]:
                 pd_entries.append(material_entries[material_id]["GGA"])
-
         pd_entries = self.compatibility.process_entries(pd_entries)
+        self.logger.debug(f"{len(pd_entries)} remain in {chemsys} after filtering")
 
         try:
-            docs = ThermoDoc.from_entries(pd_entries, sandboxes=sandboxes)
+            docs = ThermoDoc.from_entries(pd_entries)
             for doc in docs:
                 doc.entries = material_entries[doc.material_id]
                 doc.entry_types = list(material_entries[doc.material_id].keys())
@@ -160,11 +140,13 @@ class Thermo(Builder):
                 elsyms.extend([el.symbol for el in e.composition.elements])
 
             self.logger.warning(
-                f"Phase diagram errorin chemsys {'-'.join(sorted(set(elsyms)))}: {p}"
+                f"Phase diagram error in chemsys {'-'.join(sorted(set(elsyms)))}: {p}"
             )
             return []
         except Exception as e:
-            self.logger.error(f"Got unexpected error: {e}")
+            self.logger.error(
+                f"Got unexpected error while processing {[ent_.entry_id for ent_ in entries]}: {e}"
+            )
             return []
 
         return [d.dict() for d in docs]
@@ -177,10 +159,6 @@ class Thermo(Builder):
         """
         # flatten out lists
         items = list(filter(None, chain.from_iterable(items)))
-        # check for duplicates within this set
-        items = list(
-            {(v[self.thermo.key], frozenset(v["sandboxes"])): v for v in items}.values()
-        )
         # Check if already updated this run
         items = [i for i in items if i[self.thermo.key] not in self._completed_tasks]
 
@@ -194,11 +172,11 @@ class Thermo(Builder):
 
         if len(items) > 0:
             self.logger.info(f"Updating {len(items)} thermo documents")
-            self.thermo.update(docs=items, key=[self.thermo.key, "sandboxes"])
+            self.thermo.update(docs=jsanitize(items), key=[self.thermo.key])
         else:
             self.logger.info("No items to update")
 
-    def get_entries(self, chemsys: str) -> List[ComputedEntry]:
+    def get_entries(self, chemsys: str) -> List[Dict]:
         """
         Gets a entries from the tasks collection for the corresponding chemical systems
         Args:
@@ -230,7 +208,7 @@ class Thermo(Builder):
         new_q["deprecated"] = False
         materials_docs = list(
             self.materials.query(
-                criteria=new_q, properties=[self.materials.key, "entries", "sandboxes"]
+                criteria=new_q, properties=[self.materials.key, "entries"]
             )
         )
 
@@ -240,11 +218,11 @@ class Thermo(Builder):
 
         # Convert the entries into ComputedEntries and store
         for doc in materials_docs:
-            for entry in doc.get("entries", {}):
-                entry["data"]["sandboxes"] = doc["sandboxes"]
-                elsyms = sorted(set([el for el in entry["composition"]]))
-                self._entries_cache["-".join(elsyms)].append(entry)
-                all_entries.append(entry)
+            for r_type, entry_dict in doc.get("entries", {}).items():
+                entry_dict["data"]["run_type"] = r_type
+                elsyms = sorted(set([el for el in entry_dict["composition"]]))
+                self._entries_cache["-".join(elsyms)].append(entry_dict)
+                all_entries.append(entry_dict)
 
         self.logger.info(f"Total entries in {chemsys} : {len(all_entries)}")
 
@@ -272,7 +250,7 @@ class Thermo(Builder):
         thermo_mat_ids = self.thermo.distinct(self.thermo.key)
         mat_ids = self.materials.distinct(self.materials.key, self.query)
         dif_task_ids = list(set(mat_ids) - set(thermo_mat_ids))
-        q = {"task_id": {"$in": dif_task_ids}}
+        q = {"material_id": {"$in": dif_task_ids}}
         new_mat_chemsys = set(self.materials.distinct("chemsys", q))
         self.logger.debug(f"Found {len(new_mat_chemsys)} new chemical systems")
 

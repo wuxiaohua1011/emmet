@@ -2,12 +2,17 @@ import datetime
 from pathlib import Path
 from setuptools import setup, find_namespace_packages
 
+required = []
+
 with open(Path(__file__).parent / "requirements.txt") as f:
-    required = f.read().splitlines()
+    for line in f.readlines():
+        if "#egg=" in line:
+            continue
+        required.append(line)
 
 setup(
     name="emmet-builders",
-    use_scm_version={"relative_to": Path(__file__).parent},
+    use_scm_version={"root": "..", "relative_to": __file__},
     setup_requires=["setuptools_scm"],
     description="Builders for the Emmet Library",
     author="The Materials Project",
