@@ -495,7 +495,6 @@ def compress(input_dir, output_dir, nproc):
     default=STORE_VOLUMETRIC_DATA,
     help="Store any of CHGCAR, LOCPOT, AECCAR0, AECCAR1, AECCAR2, ELFCAR.",
 )
-
 def parse(task_ids, snl_metas, nproc, store_volumetric_data):  # noqa: C901
     """Parse VASP launchers into tasks"""
     ctx = click.get_current_context()

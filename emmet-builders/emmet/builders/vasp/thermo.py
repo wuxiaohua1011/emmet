@@ -22,12 +22,12 @@ from emmet.core.vasp.calc_types import run_type
 
 class Thermo(Builder):
     def __init__(
-        self,
-        materials: Store,
-        thermo: Store,
-        query: Optional[Dict] = None,
-        compatibility=None,
-        **kwargs,
+            self,
+            materials: Store,
+            thermo: Store,
+            query: Optional[Dict] = None,
+            compatibility=None,
+            **kwargs,
     ):
         """
         Calculates thermodynamic quantities for materials from phase
@@ -145,14 +145,12 @@ class Thermo(Builder):
             return []
         except Exception as e:
 
-
             self.logger.error(
                 f"Got unexpected error while processing {[ent_.entry_id for ent_ in entries]}: {e}"
             )
             self.logger.error(f"Got unexpected error while processing {[ent_.entry_id for ent_ in pd_entries]}: {e}")
 
             return []
-
 
         return [d.dict() for d in docs]
 
@@ -234,7 +232,7 @@ class Thermo(Builder):
         return all_entries
 
     def get_updated_chemsys(
-        self,
+            self,
     ) -> Set:
         """ Gets updated chemical system as defined by the updating of an existing material """
 

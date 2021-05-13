@@ -737,64 +737,90 @@ def nomad_upload_data(task_ids: List[str], username: str,
         None or False otherwise
     """
     logger.info(f"[{name}] start processing [{len(task_ids)}] tasks")
-    # create the bravado client and establish credential
-    nomad_url = 'http://nomad-lab.eu/prod/rae/api'
-    http_client = RequestsClient()
-    http_client.authenticator = KeycloakAuthenticator(user=username, password=password, nomad_url=nomad_url)
-    client: SwaggerClient = SwaggerClient.from_url('%s/swagger.json' % nomad_url, http_client=http_client)
 
-    raw = gdrive_mongo_store.query(criteria={"task_id": {"$in": task_ids}})
-    records: List[GDriveLog] = [GDriveLog.parse_obj(record) for record in raw]
+    try:
+        # create the bravado client and establish credential
+        nomad_url = 'http://nomad-lab.eu/prod/rae/api'
+        http_client = RequestsClient()
+        http_client.authenticator = KeycloakAuthenticator(user=username, password=password, nomad_url=nomad_url)
+        client: SwaggerClient = SwaggerClient.from_url('%s/swagger.json' % nomad_url, http_client=http_client)
+    except Exception as e:
+        logger.error(f"[{name}] Unable to get credential: {e}")
+        return False
 
-    # prepare upload data
-    upload_preparation_dir = root_dir / Path(f"nomad_upload_{name}_{datetime.now().strftime('%m_%d_%Y')}")
-    if not upload_preparation_dir.exists():
-        upload_preparation_dir.mkdir(parents=True, exist_ok=True)
+    try:
+        raw = gdrive_mongo_store.query(criteria={"task_id": {"$in": task_ids}})
+        records: List[GDriveLog] = [GDriveLog.parse_obj(record) for record in raw]
+    except Exception as e:
+        logger.error(f"[{name}] failed to fetch data from mongo store: {e}")
+        return False
 
-    # organize_data
-    nomad_json, untar_source_file_path_to_arcname_map = nomad_organize_data(task_ids=task_ids, records=records,
-                                                                            root_dir=root_dir,
-                                                                            upload_preparation_dir=
-                                                                            upload_preparation_dir,
-                                                                            name=name)
+    try:
+        # prepare upload data
+        upload_preparation_dir = root_dir / Path(f"nomad_upload_{name}_{datetime.now().strftime('%m_%d_%Y')}")
+        if not upload_preparation_dir.exists():
+            upload_preparation_dir.mkdir(parents=True, exist_ok=True)
 
-    # write json data to file
-    write_json(upload_preparation_dir=upload_preparation_dir, nomad_json=nomad_json, name=name)
+        # organize_data
+        nomad_json, untar_source_file_path_to_arcname_map = nomad_organize_data(task_ids=task_ids, records=records,
+                                                                                root_dir=root_dir,
+                                                                                upload_preparation_dir=
+                                                                                upload_preparation_dir,
+                                                                                name=name)
+    except Exception as e:
+        logger.error(f"[{name}] failed to prepare upload data: {e}")
+        return False
 
-    # un-tar.gz the files
-    zipped_upload_preparation_file_path = write_zip_from_targz(upload_preparation_dir=upload_preparation_dir,
-                                                               untar_source_file_path_to_arcname_map=
-                                                               untar_source_file_path_to_arcname_map,
-                                                               name=name)
+    try:
+        # write json data to file
+        write_json(upload_preparation_dir=upload_preparation_dir, nomad_json=nomad_json, name=name)
 
-    # upload to nomad
-    logger.info(f"[{name}] Start Uploading [{zipped_upload_preparation_file_path}]"
-                f"[{os.path.getsize(zipped_upload_preparation_file_path)} bytes] to NOMAD")
-    user = client.auth.get_auth().response().result
-    token = user.access_token
-    url = nomad_url + '/uploads/?publish_directly=true'
-    with open(zipped_upload_preparation_file_path, 'rb') as f:
-        response = requests.put(url=url, headers={'Authorization': 'Bearer %s' % token}, data=f)
-    upload_id = response.json()['upload_id']
-    if response.status_code == 200:
-        logger.info(f"[{name}] is done uploading. Upload ID = [{upload_id}]")
-        upload_completed = True
-    else:
-        upload_completed = False
-        logger.error(f'Upload [{upload_id}] failed with code [{response.json()}]')
+        # un-tar.gz the files
+        zipped_upload_preparation_file_path = write_zip_from_targz(upload_preparation_dir=upload_preparation_dir,
+                                                                   untar_source_file_path_to_arcname_map=
+                                                                   untar_source_file_path_to_arcname_map,
+                                                                   name=name)
+    except Exception as e:
+        logger.error(f"[{name}] failed to write json and re-zip data: {e}")
+        return False
+    try:
+        # upload to nomad
+        logger.info(f"[{name}] Start Uploading [{zipped_upload_preparation_file_path}]"
+                    f"[{os.path.getsize(zipped_upload_preparation_file_path)} bytes] to NOMAD")
+        user = client.auth.get_auth().response().result
+        token = user.access_token
+        url = nomad_url + '/uploads/?publish_directly=true'
+        with open(zipped_upload_preparation_file_path, 'rb') as f:
+            response = requests.put(url=url, headers={'Authorization': 'Bearer %s' % token}, data=f)
+        upload_id = response.json()['upload_id']
+        if response.status_code == 200:
+            logger.info(f"[{name}] is done uploading. Upload ID = [{upload_id}]")
+            upload_completed = True
+        else:
+            upload_completed = False
+            logger.error(f'Upload [{upload_id}] failed with code [{response.json()}]')
+    except Exception as e:
+        logger.error(f"[{name}] Failed to upload to NOMAD: {e}")
+        return False
 
-    # update mongo store
-    if upload_completed:
-        for record in records:
-            record.nomad_updated = datetime.now()
-            record.nomad_upload_id = upload_id
-        gdrive_mongo_store.update(docs=[record.dict() for record in records], key="task_id")
-
-    # clean up
-    if upload_preparation_dir.exists():
-        shutil.rmtree(upload_preparation_dir.as_posix())
-    if Path(zipped_upload_preparation_file_path).exists():
-        os.remove(zipped_upload_preparation_file_path)
+    try:
+        # update mongo store
+        if upload_completed:
+            for record in records:
+                record.nomad_updated = datetime.now()
+                record.nomad_upload_id = upload_id
+            gdrive_mongo_store.update(docs=[record.dict() for record in records], key="task_id")
+    except Exception as e:
+        logger.error(f"[{name}] Failed to log to mongo store: {e}")
+        return False
+    try:
+        # clean up
+        if upload_preparation_dir.exists():
+            shutil.rmtree(upload_preparation_dir.as_posix())
+        if Path(zipped_upload_preparation_file_path).exists():
+            os.remove(zipped_upload_preparation_file_path)
+    except Exception as e:
+        logger.error(f"[{name}] Failed to clean up: {e}")
 
     return upload_completed
 
