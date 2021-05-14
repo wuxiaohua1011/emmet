@@ -27,7 +27,6 @@ from zipfile import ZipFile, ZIP_DEFLATED
 import click
 import mgzip
 
-
 from datetime import datetime
 from collections import defaultdict
 from pymatgen.core import Structure
@@ -374,14 +373,14 @@ def parse_vasp_dirs(vaspdirs, tag, task_ids, snl_metas):  # noqa: C901
     no_dupe_check = ctx.parent.parent.params["no_dupe_check"]
     run = ctx.parent.parent.params["run"]
     projection = {"tags": 1, "task_id": 1}
-    #projection = {"tags": 1, "task_id": 1, "calcs_reversed": 1}
+    # projection = {"tags": 1, "task_id": 1, "calcs_reversed": 1}
     count = 0
     drone = VaspDrone(
         additional_fields={"tags": tags},
         store_volumetric_data=ctx.params["store_volumetric_data"],
     )
-    #fs_keys = ["bandstructure", "dos", "chgcar", "locpot", "elfcar"]
-    #for i in range(3):
+    # fs_keys = ["bandstructure", "dos", "chgcar", "locpot", "elfcar"]
+    # for i in range(3):
     #    fs_keys.append(f"aeccar{i}")
 
     for vaspdir in vaspdirs:
@@ -470,11 +469,11 @@ def parse_vasp_dirs(vaspdirs, tag, task_ids, snl_metas):  # noqa: C901
         if run:
             if task_doc["state"] == "successful":
                 if docs and no_dupe_check:
-                    #new_calc = task_doc["calcs_reversed"][0]
-                    #existing_calc = docs[0]["calcs_reversed"][0]
-                    #print(existing_calc.keys())
+                    # new_calc = task_doc["calcs_reversed"][0]
+                    # existing_calc = docs[0]["calcs_reversed"][0]
+                    # print(existing_calc.keys())
 
-                    #for fs_key in fs_keys:
+                    # for fs_key in fs_keys:
                     #    print(fs_key)
                     #    fs_id_key = f"{fs_key}_fs_id"
                     #    if fs_id_key in existing_calc:
@@ -492,7 +491,7 @@ def parse_vasp_dirs(vaspdirs, tag, task_ids, snl_metas):  # noqa: C901
                     target.collection.remove({"task_id": task_id})
                     logger.warning(f"Removed previously parsed task {task_id}!")
 
-                #return count  # TODO remove
+                # return count  # TODO remove
 
                 try:
                     target.insert_task(task_doc, use_gridfs=True)
@@ -757,8 +756,14 @@ def nomad_upload_data(task_ids: List[str], username: str,
 
     try:
         # prepare upload data
-        upload_preparation_dir = root_dir / Path(f"nomad_upload_{name}_{datetime.now().strftime('%m_%d_%Y')}")
+        upload_preparation_dir = root_dir / Path(f"nomad_upload_{name}")
         if not upload_preparation_dir.exists():
+            upload_preparation_dir.mkdir(parents=True, exist_ok=True)
+        if upload_preparation_dir.exists():
+            # this should NOT exist, if it exist, that means previous upload probably failed,
+            # and for some reason it did not make sure to clean up after itself.
+            # Forcefully clean this directory
+            _nomad_clean_up(upload_preparation_dir, None)
             upload_preparation_dir.mkdir(parents=True, exist_ok=True)
 
         # organize_data
@@ -782,6 +787,7 @@ def nomad_upload_data(task_ids: List[str], username: str,
                                                                    name=name)
     except Exception as e:
         logger.error(f"[{name}] failed to write json and re-zip data: {e}")
+        _nomad_clean_up(upload_preparation_dir, None)
         return False
     try:
         # upload to nomad
@@ -799,8 +805,15 @@ def nomad_upload_data(task_ids: List[str], username: str,
         else:
             upload_completed = False
             logger.error(f'Upload [{upload_id}] failed with code [{response.json()}]')
+            from urllib.error import HTTPError
+            raise HTTPError(url=response.url,
+                            code=response.status_code,
+                            msg=f'Upload [{upload_id}] failed with code [{response.json()}]',
+                            hdrs=response.headers,
+                            fp=None)
     except Exception as e:
-        logger.error(f"[{name}] Failed to upload to NOMAD: {e}")
+        logger.error(f"[{name}] Failed to upload to NOMAD: {e}. Removing data generated.")
+        _nomad_clean_up(upload_preparation_dir, Path(zipped_upload_preparation_file_path))
         return False
 
     try:
@@ -811,18 +824,22 @@ def nomad_upload_data(task_ids: List[str], username: str,
                 record.nomad_upload_id = upload_id
             gdrive_mongo_store.update(docs=[record.dict() for record in records], key="task_id")
     except Exception as e:
-        logger.error(f"[{name}] Failed to log to mongo store: {e}")
+        logger.error(f"[{name}] Failed to log to mongo store: {e}. Removing data generated.")
+        _nomad_clean_up(upload_preparation_dir, Path(zipped_upload_preparation_file_path))
         return False
     try:
-        # clean up
-        if upload_preparation_dir.exists():
-            shutil.rmtree(upload_preparation_dir.as_posix())
-        if Path(zipped_upload_preparation_file_path).exists():
-            os.remove(zipped_upload_preparation_file_path)
+        _nomad_clean_up(upload_preparation_dir, Path(zipped_upload_preparation_file_path))
     except Exception as e:
         logger.error(f"[{name}] Failed to clean up: {e}")
 
     return upload_completed
+
+
+def _nomad_clean_up(upload_preparation_dir: Optional[Path], zipped_upload_preparation_file_path: Optional[Path]):
+    if upload_preparation_dir is not None and upload_preparation_dir.exists():
+        shutil.rmtree(upload_preparation_dir.as_posix())
+    if zipped_upload_preparation_file_path is not None and zipped_upload_preparation_file_path.exists():
+        os.remove(zipped_upload_preparation_file_path.as_posix())
 
 
 def nomad_organize_data(task_ids, records, root_dir: Path, upload_preparation_dir: Path, name):
