@@ -546,12 +546,9 @@ def make_tar_file(output_dir: Path, output_file_name: str, source_dir: Path):
 
     if output_tar_file.exists():
         os.remove(output_tar_file.as_posix())
-    print("output_dir", output_dir)
-    print("output_tar_file", output_tar_file)
+
     with tarfile.open(output_tar_file.as_posix(), "w:gz") as tar:
-        print(source_dir, os.path.basename(source_dir.as_posix()))
         tar.add(source_dir.as_posix(), arcname=os.path.basename(source_dir.as_posix()))
-        print("Written")
 
 
 def compress_launchers(input_dir: Path, output_dir: Path, launcher_paths: List[str]):
@@ -912,7 +909,7 @@ def nomad_organize_data(task_ids, records, root_dir: Path, upload_preparation_di
             untar_source_file_path_to_arcname_map.append(
                 (full_file_path.as_posix(), full_file_path.as_posix()[block_index:first_launcher_index - 1]))
             logger.info(untar_source_file_path_to_arcname_map)
-            exit(1)
+    print("untar_source_file_path_to_arcname_map", untar_source_file_path_to_arcname_map)
     return nomad_json, untar_source_file_path_to_arcname_map
 
 
