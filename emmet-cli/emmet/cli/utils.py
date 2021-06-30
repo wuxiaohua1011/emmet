@@ -564,17 +564,25 @@ def compress_launchers(input_dir: Path, output_dir: Path, launcher_paths: List[s
     :param launcher_paths:
     :return:
     """
+    PREFIXES = ["res_", "aflow_", "block_"]
 
     for launcher_path in launcher_paths:
         print("launcher_path:", launcher_path)
-
-
         output_file_name = launcher_path.split("/")[-1]
+        folder_name = ""
+        # make directory
+        for p in PREFIXES:
+            if p in launcher_path:
+                folder_name_start_index = launcher_path.rfind(p)
+                folder_name_end_index = launcher_path.find(output_file_name)
+                folder_name = launcher_path[folder_name_start_index:folder_name_end_index]
+                print(folder_name)
+                break
 
+        # write to tar.gz file
         logger.info(f"Compressing {launcher_path}".strip())
         output_tar_file = output_dir / output_file_name
         source_dir = Path(input_dir) / launcher_path
-
         with tarfile.open(output_tar_file.as_posix()+".tar.gz", "w:gz") as tar:
             tar.add(source_dir.as_posix(), arcname=os.path.basename(source_dir.as_posix()))
 
