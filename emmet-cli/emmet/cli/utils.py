@@ -548,9 +548,12 @@ def make_tar_file(output_dir: Path, output_file_name: str, source_dir: Path):
         output_dir.mkdir(parents=True, exist_ok=True)
     output_tar_file = output_dir / output_file_name
 
-    if output_tar_file.exists() is False:
-        with tarfile.open(output_tar_file.as_posix(), "w:gz") as tar:
-            tar.add(source_dir.as_posix(), arcname=os.path.basename(source_dir.as_posix()))
+    if output_tar_file.exists():
+        shutil.rmtree(output_tar_file)
+
+
+    with tarfile.open(output_tar_file.as_posix(), "w:gz") as tar:
+        tar.add(source_dir.as_posix(), arcname=os.path.basename(source_dir.as_posix()))
 
 
 def compress_launchers(input_dir: Path, output_dir: Path, launcher_paths: List[str]):
@@ -568,14 +571,11 @@ def compress_launchers(input_dir: Path, output_dir: Path, launcher_paths: List[s
         out_dir = Path(output_dir) / Path(launcher_path).parent
 
         output_file_name = launcher_path.split("/")[-1]
-        print(output_dir, output_file_name, (out_dir / output_file_name).exists())
-        if (out_dir / output_file_name).exists():
-            continue
-        else:
-            logger.info(f"Compressing {launcher_path}".strip())
-            make_tar_file(output_dir=out_dir,
-                          output_file_name=output_file_name,
-                          source_dir=Path(input_dir) / launcher_path)
+
+        logger.info(f"Compressing {launcher_path}".strip())
+        make_tar_file(output_dir=out_dir,
+                      output_file_name=output_file_name,
+                      source_dir=Path(input_dir) / launcher_path)
 
 
 def find_un_uploaded_materials_task_id(gdrive_mongo_store: MongograntStore,
