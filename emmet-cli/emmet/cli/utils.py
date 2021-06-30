@@ -897,10 +897,10 @@ def nomad_organize_data(task_ids, records, root_dir: Path, upload_preparation_di
             block_index = 0
             for p in PREFIXES:
                 block_index = full_path_without_suffix.as_posix().rfind(p)
-
+            print("full_path_without_suffix",full_path_without_suffix)
             nomad_name = (Path(upload_preparation_dir.name) / Path(
                 (full_path_without_suffix.as_posix()[block_index:])) / vasp_run_name).as_posix()
-
+            print("nomad_name", nomad_name)
             first_launcher_index = full_path_without_suffix.as_posix().find("launcher")
             # nomad_name = (upload_preparation_dir.name /
             #               Path(full_path_without_suffix.as_posix()[last_launcher_index:]) / vasp_run_name).as_posix()
