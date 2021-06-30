@@ -873,6 +873,7 @@ def nomad_organize_data(task_ids, records, root_dir: Path, upload_preparation_di
         }
     }
     """
+    PREFIXES = ["res_", "aflow_", "block_"]
     for record in tqdm(records):
         full_path_without_suffix: Path = root_dir / record.path
         full_file_path: Path = (root_dir / (record.path + ".tar.gz"))
@@ -887,9 +888,13 @@ def nomad_organize_data(task_ids, records, root_dir: Path, upload_preparation_di
             external_id = record.task_id
             references = [f"https://materialsproject.org/tasks/{external_id}"]
             entries: dict = nomad_json.get("entries")
-            block_index = full_path_without_suffix.as_posix().rfind("block")
+            block_index = 0
+            for p in PREFIXES:
+                block_index = full_path_without_suffix.as_posix().rfind(p)
+
             nomad_name = (Path(upload_preparation_dir.name) / Path(
                 (full_path_without_suffix.as_posix()[block_index:])) / vasp_run_name).as_posix()
+
             first_launcher_index = full_path_without_suffix.as_posix().find("launcher")
             # nomad_name = (upload_preparation_dir.name /
             #               Path(full_path_without_suffix.as_posix()[last_launcher_index:]) / vasp_run_name).as_posix()
@@ -897,6 +902,8 @@ def nomad_organize_data(task_ids, records, root_dir: Path, upload_preparation_di
             # last_launcher_index = full_file_path.as_posix().rfind("launcher")
             untar_source_file_path_to_arcname_map.append(
                 (full_file_path.as_posix(), full_file_path.as_posix()[block_index:first_launcher_index - 1]))
+            logger.info(untar_source_file_path_to_arcname_map)
+            exit(1)
     return nomad_json, untar_source_file_path_to_arcname_map
 
 
