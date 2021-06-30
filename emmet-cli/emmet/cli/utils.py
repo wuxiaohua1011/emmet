@@ -888,7 +888,9 @@ def nomad_organize_data(task_ids, records, root_dir: Path, upload_preparation_di
             logger.info(f"[{name}] File not found: Record can no longer be found in {full_file_path}")
         else:
             my_tar = tarfile.open(full_file_path.as_posix(), "r")
+
             file_names = my_tar.getnames()
+            print(file_names)
             vasp_run_names = [name for name in file_names if "vasprun" in name]
             vasp_run_name = Path(vasp_run_names[0]).name
 
