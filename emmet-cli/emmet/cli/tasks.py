@@ -471,7 +471,8 @@ def compress(input_dir, output_dir, nproc):
             full_output_dir.mkdir(parents=True, exist_ok=True)
 
         pool = multiprocessing.Pool(processes=nproc)
-        pool.starmap(func=compress_launchers, iterable=[(Path(full_input_dir), Path(full_output_dir),
+        pool.starmap(func=compress_launchers, iterable=[(Path(full_input_dir),
+                                                         Path(full_output_dir),
                                                          sorted(launcher_paths, key=len, reverse=True))
                                                         for launcher_paths in path_organized_by_blocks.values()])
         logger.info(msg=msg)

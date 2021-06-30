@@ -49,12 +49,10 @@ from maggma.stores.advanced_stores import MongograntStore
 from mongogrant.client import Client
 from pymatgen.util.provenance import StructureNL
 
-
 from pydantic import BaseModel, Field
 from pymatgen import Structure
 from pymongo.errors import DocumentTooLarge
 from tqdm import tqdm
-
 
 from emmet.cli import SETTINGS
 from emmet.core.utils import group_structures
@@ -362,7 +360,6 @@ def reconstruct_command(sbatch=False):
     return " ".join(command).strip().strip("\\")
 
 
-
 def parse_vasp_dirs(vaspdirs, tag, task_ids, snl_metas):  # noqa: C901
 
     process = multiprocessing.current_process()
@@ -531,7 +528,6 @@ def parse_vasp_dirs(vaspdirs, tag, task_ids, snl_metas):  # noqa: C901
                             f"SNL {result.inserted_id} inserted into {snl_collection.full_name}."
                         )
 
-
                     shutil.rmtree(vaspdir)
                     logger.info(f"{name} Successfully parsed and removed {launcher}.")
                     count += 1
@@ -556,6 +552,7 @@ def make_tar_file(output_dir: Path, output_file_name: str, source_dir: Path):
         tar.add(source_dir.as_posix(), arcname=os.path.basename(source_dir.as_posix()))
         print("Written")
 
+
 def compress_launchers(input_dir: Path, output_dir: Path, launcher_paths: List[str]):
     """
 
@@ -569,7 +566,7 @@ def compress_launchers(input_dir: Path, output_dir: Path, launcher_paths: List[s
 
     for launcher_path in launcher_paths:
         out_dir = Path(output_dir) / Path(launcher_path).parent
-
+        print(f"out_dir", output_dir)
         output_file_name = launcher_path.split("/")[-1]
 
         logger.info(f"Compressing {launcher_path}".strip())
