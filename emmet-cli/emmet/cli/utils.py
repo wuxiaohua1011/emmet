@@ -537,28 +537,14 @@ def parse_vasp_dirs(vaspdirs, tag, task_ids, snl_metas):  # noqa: C901
     return count
 
 
-def make_tar_file(output_dir: Path, output_file_name: str, source_dir: Path):
-    if not output_file_name.endswith(".tar.gz"):
-        output_file_name = output_file_name + ".tar.gz"
-    if output_dir.exists() is False:
-        output_dir.mkdir(parents=True, exist_ok=True)
-    output_tar_file = output_dir / output_file_name
-
-    if output_tar_file.exists():
-        os.remove(output_tar_file.as_posix())
-
-    with tarfile.open(output_tar_file.as_posix(), "w:gz") as tar:
-        tar.add(source_dir.as_posix(), arcname=os.path.basename(source_dir.as_posix()))
-
-
 def compress_launchers(input_dir: Path, output_dir: Path, launcher_paths: List[str]):
     """
 
     create directories & zip
 
-    :param input_dir:
-    :param output_dir:
-    :param launcher_paths:
+    :param input_dir: input directory of the launchers
+    :param output_dir: output directory
+    :param launcher_paths: all launchers to be written
     :return:
     """
     PREFIXES = ["res_", "aflow_", "block_"]
@@ -584,54 +570,58 @@ def compress_launchers(input_dir: Path, output_dir: Path, launcher_paths: List[s
 
 def find_un_uploaded_materials_task_id(gdrive_mongo_store: MongograntStore,
                                        material_mongo_store: MongograntStore,
-                                       max_num: int = 1000) -> List[str]:
+                                       max_num: int = 1000, should_upload_blessed_task=True) -> List[str]:
     """
     Given mongo stores, find the next max_num mp_ids that are not yet uploaded.
 
+    :param should_upload_blessed_task: if true, upload blessed, non deprecated tasks first
     :param gdrive_mongo_store: gdrive mongo store
     :param material_mongo_store: materials mongo store
     :param max_num: int, maximum number of materials to return
     :return:
         list of materials that are not uploaded
     """
-    # get a ALL task ids, sorted in earliest material order
-    # find which ones are not uploaded
-    task_ids: Dict[str, None] = find_task_ids_sorted(material_mongo_store)
-    gdrive_results = gdrive_mongo_store.query(criteria={"task_id": {"$in": list(task_ids)}},
-                                              properties={"task_id": 1})
-    uploaded_task_ids = set(gdrive_result["task_id"] for gdrive_result in gdrive_results)
-    for k in uploaded_task_ids:
-        task_ids.pop(k, None)
-    # task_ids at this point contain un-uploaded keys, sorted in order of materials update date
-    result: List[str] = list(task_ids.keys())[:max_num]
-    return result
+    if should_upload_blessed_task is False:
+        gdrive_tasks = set()
+        unuploaded_non_blessed_tasks = set()
 
+        gdrive_materials = gdrive_mongo_store.query(properties={"task_id": 1})
+        for m in gdrive_materials:
+            gdrive_tasks.add(m["task_id"])
 
-def find_task_ids_sorted(material_mongo_store: MongograntStore) -> Dict[str, None]:
-    result: Dict[str, None] = dict()
-    materials = material_mongo_store.query(
-        criteria={"deprecated": False},
-        properties={"task_id": 1, "blessed_tasks": 1, "last_updated": 1},
-        sort={"last_updated": Sort.Descending})
-    for material in materials:
-        if "blessed_tasks" in material:
-            blessed_tasks: dict = material["blessed_tasks"]
-            task_ids = list(blessed_tasks.values())
-            result.update(dict.fromkeys(task_ids))
-    return result
+        materials = material_mongo_store.query(
+            criteria={"deprecated": False},
+            properties={"task_id": 1, "task_ids": 1, "last_updated": 1},
+            sort={"last_updated": Sort.Descending})
 
+        for m in materials:
+            for t in m["task_ids"]:
+                unuploaded_non_blessed_tasks.add(t)
+        unuploaded_non_blessed_tasks = unuploaded_non_blessed_tasks.difference(gdrive_tasks)
 
-def find_material_task_ids(material_mongo_store) -> Dict[str, List[str]]:
-    materials = material_mongo_store.query(
-        criteria={"deprecated": False},
-        properties={"task_id": 1, "blessed_tasks": 1, "last_updated": 1},
-        sort={"last_updated": Sort.Descending})
-    materials_task_id_dict: Dict[str, List[str]] = dict()
-    for material in materials:
-        if "blessed_tasks" in material:
-            blessed_tasks: dict = material["blessed_tasks"]
-            materials_task_id_dict[material["task_id"]] = list(blessed_tasks.values())
-    return materials_task_id_dict
+        return list(unuploaded_non_blessed_tasks[:max_num])
+    else:
+        # get a ALL task ids, sorted in earliest material order
+        # find which ones are not uploaded
+        task_ids: Dict[str, None] = dict() # using dictionary here because dictionary keys maintains order.
+        materials = material_mongo_store.query(
+            criteria={"deprecated": False},
+            properties={"task_id": 1, "blessed_tasks": 1, "last_updated": 1},
+            sort={"last_updated": Sort.Descending})
+        for material in materials:
+            if "blessed_tasks" in material:
+                blessed_tasks: dict = material["blessed_tasks"]
+                tasks = list(blessed_tasks.values())
+                task_ids.update(dict.fromkeys(tasks))
+
+        gdrive_results = gdrive_mongo_store.query(criteria={"task_id": {"$in": list(task_ids)}},
+                                                  properties={"task_id": 1})
+        uploaded_task_ids = set(gdrive_result["task_id"] for gdrive_result in gdrive_results)
+        for k in uploaded_task_ids:
+            task_ids.pop(k, None)
+        # task_ids at this point contain un-uploaded keys, sorted in order of materials update date
+        result: List[str] = list(task_ids.keys())[:max_num]
+        return result
 
 
 class GDriveLog(BaseModel):
@@ -890,12 +880,14 @@ def nomad_organize_data(task_ids, records, root_dir: Path, upload_preparation_di
              define vasprun_path as launcher_name/OPTIONAL/vasprun-OPTIONAL.xml.gz
              define vasprun_name as vasprun-OPTIONAL.xml.gz
 
-    :param task_ids:
-    :param records:
-    :param root_dir:
-    :param upload_preparation_dir:
-    :param name:
+    :param task_ids: list of task ids
+    :param records: list of record
+    :param root_dir: root directory of this operation
+    :param upload_preparation_dir: upload prepartion directory
+    :param name: name of this thread
     :return:
+        dictionary of
+            full block/launcherfolder/launchername file path -> archive name (block/launcherfolder/launchername)
     """
     # loop over records, generate json information
     nomad_json: dict = {"comment": f"Materials Project Upload at {datetime.now()}",
@@ -978,6 +970,13 @@ def write_zip_from_targz(untar_source_file_path_to_arcname_map, upload_preparati
 
 
 def zipdir(path, ziph):
+    """
+    Sip the directory
+    :param path: root path to start zipping
+    :param ziph: zip object
+    :return:
+        None
+    """
     # ziph is zipfile handle
     for root, dirs, files in os.walk(path):
         for file in files:
@@ -987,7 +986,6 @@ def zipdir(path, ziph):
 
 
 def write_json(upload_preparation_dir, nomad_json, name):
-    # json_file_name = f"nomad_{datetime.now().strftime('%m_%d_%Y_%H_%M_%S')}.json"
     json_file_name = "nomad.json"
     json_file_path = upload_preparation_dir / json_file_name
     with open(json_file_path.as_posix(), 'w') as outfile:
@@ -1042,6 +1040,13 @@ def md5_dir(directory: Union[str, Path]) -> str:
 
 
 def fill_record_data(record: GDriveLog, raw_dir: Path, compress_dir: Path):
+    """
+    Fill record data
+    :param record: record to be filled
+    :param raw_dir: raw directory. representing where the raw file is
+    :param compress_dir: compress directory, representing where the compressed directory is
+    :return:
+    """
     compress_file_dir = (compress_dir / record.path).as_posix() + ".tar.gz"
     record.file_size = os.path.getsize(compress_file_dir)
     record.md5hash = md5_dir(raw_dir / record.path)
