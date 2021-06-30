@@ -708,16 +708,16 @@ def upload_latest(mongo_configfile, num_materials):
             logger.info(f"Uploading using command [{' '.join(upload_cmds)}]")
             run_and_log_info(args=upload_cmds)
 
-            # # log to mongodb
-            # log_to_mongodb(mongo_configfile=mongo_configfile, task_records=task_records,
-            #                raw_dir=full_root_dir / 'raw', compress_dir=full_root_dir / "compressed")
-            #
-            # # move uploaded & compressed content to tmp long term storage
-            # mv_cmds = ["rclone", "move",
-            #            f"{(full_root_dir / 'compressed').as_posix()}",
-            #            f"{(full_root_dir / 'tmp_storage').as_posix()}",
-            #            "--delete-empty-src-dirs"]
-            # run_and_log_info(args=mv_cmds)
+            # log to mongodb
+            log_to_mongodb(mongo_configfile=mongo_configfile, task_records=task_records,
+                           raw_dir=full_root_dir / 'raw', compress_dir=full_root_dir / "compressed")
+
+            # move uploaded & compressed content to tmp long term storage
+            mv_cmds = ["rclone", "move",
+                       f"{(full_root_dir / 'compressed').as_posix()}",
+                       f"{(full_root_dir / 'tmp_storage').as_posix()}",
+                       "--delete-empty-src-dirs"]
+            run_and_log_info(args=mv_cmds)
             #
             # # run clean up command
             # # DANGEROUS!!
