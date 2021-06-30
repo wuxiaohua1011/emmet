@@ -1034,6 +1034,7 @@ def find_all_launcher_paths(input_dir: Path) -> List[str]:
     paths: List[str] = []
     for root, dirs, files in os.walk(input_dir.as_posix()):
         for name in dirs:
+            logger.info(name)
             if "launcher" in name:
                 sub_paths = find_all_launcher_paths_helper(Path(root) / name)
                 paths.extend(sub_paths)
