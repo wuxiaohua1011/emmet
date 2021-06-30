@@ -943,28 +943,9 @@ def nomad_organize_data(task_ids, records, root_dir: Path, upload_preparation_di
             entries[nomad_name] = {"external_id": external_id, "references": references}
             untar_source_file_path_to_arcname_map.append(
                 (full_file_path.as_posix(),
-                 (Path(upload_preparation_dir.name) / block_name / launcher_folder_path / launcher_name).as_posix()
+                 (Path(block_name) / launcher_folder_path / launcher_name).as_posix()
                  )
             )
-
-            # block_index = 0
-            # for p in PREFIXES:
-            #     block_index = full_path_without_suffix.as_posix().rfind(p)
-            # print("full_path_without_suffix",full_path_without_suffix)
-            # nomad_name = (Path(upload_preparation_dir.name) / Path(
-            #     (full_path_without_suffix.as_posix()[block_index:])) / vasp_run_name).as_posix()
-            # print("nomad_name", nomad_name)
-            # first_launcher_index = full_path_without_suffix.as_posix().find("launcher")
-            # # nomad_name = (upload_preparation_dir.name /
-            # #               Path(full_path_without_suffix.as_posix()[last_launcher_index:]) / vasp_run_name).as_posix()
-            # entries[nomad_name] = {"external_id": external_id, "references": references}
-            # # last_launcher_index = full_file_path.as_posix().rfind("launcher")
-            # untar_source_file_path_to_arcname_map.append(
-            #     (full_file_path.as_posix(), full_file_path.as_posix()[block_index:first_launcher_index - 1]))
-            # logger.info(untar_source_file_path_to_arcname_map)
-    from pprint import pprint
-    pprint(nomad_json)
-    print("untar_source_file_path_to_arcname_map", untar_source_file_path_to_arcname_map)
     return nomad_json, untar_source_file_path_to_arcname_map
 
 
