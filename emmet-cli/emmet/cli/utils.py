@@ -855,6 +855,48 @@ def _nomad_clean_up(upload_preparation_dir: Optional[Path], zipped_upload_prepar
 
 
 def nomad_organize_data(task_ids, records, root_dir: Path, upload_preparation_dir: Path, name):
+    """
+            for every record, build a entry in our log later used to populate nomad.json
+                nomad.json will look like:
+                {
+                "comment": "Data from a cool external project",
+                "external_db": "Materials Project",
+                "entries": {
+                    "block_2017-11-15-20-03-23-693030/launcher_2017-11-18-00-38-32-702369/launcher_2017-11-18-02-22-11-552158/vasprun.xml.gz" : {
+                        "external_id" : "michael-2",
+                        "references": ["https://materialsproject.org/tasks/michael-2/"]
+                        },
+                        ...
+                    }
+                }
+            A path is expected as
+
+            block_xxx/launcher_folder1/launcher_folder2/launcher_name/OPTIONAL/vasprun-OPTIONAL.xml.gz
+            where `block_xxx` must contain PREFIXES
+
+            there might be arbitrary nesting for launcher_folder1/launcher_folder2
+            `launcher_folder` can present itself as any kind, so for example, launcher_xxx, or runs_yyy
+
+            `launcher_name` can present it self as any kind, but is gaurendeed to be the last layer
+            (so like it is launcher_name.tar.gz) in tmp_storage
+
+            and after `launcher_name`, we have an arbitrary nesting of folders, but one of them must contain a
+            `vasprun-OPTIONAL.xml.gz`. There might be multiple files that contain the keyword `vasprun`, choose
+             the first one
+
+             define block_name as the block_xx layer
+             define launcher_folder_path as the launcher_folder1/launcher_folder2 layer
+             define launcher_name as launcher_name
+             define vasprun_path as launcher_name/OPTIONAL/vasprun-OPTIONAL.xml.gz
+             define vasprun_name as vasprun-OPTIONAL.xml.gz
+
+    :param task_ids:
+    :param records:
+    :param root_dir:
+    :param upload_preparation_dir:
+    :param name:
+    :return:
+    """
     # loop over records, generate json information
     nomad_json: dict = {"comment": f"Materials Project Upload at {datetime.now()}",
                         "external_db": "Materials Project",
@@ -864,21 +906,7 @@ def nomad_organize_data(task_ids, records, root_dir: Path, upload_preparation_di
         Tuple[str, str]] = list()  # list of (full_path/launcher-xyz.tar.gz launcher-xyz.tar.gz)
     logger.info(f"[{name}] Organizing {len(task_ids)} launchers")
 
-    """
-    for every record, build a entry in our log later used to populate nomad.json
-    nomad.json will look like:
-    {
-    "comment": "Data from a cool external project",
-    "external_db": "Materials Project",
-    "entries": {
-        "block_2017-11-15-20-03-23-693030/launcher_2017-11-18-00-38-32-702369/launcher_2017-11-18-02-22-11-552158/vasprun.xml.gz" : {
-            "external_id" : "michael-2",
-            "references": ["https://materialsproject.org/tasks/michael-2/"]
-            },
-            ...
-        }
-    }
-    """
+
     PREFIXES = ["res_", "aflow_", "block_"]
     for record in tqdm(records):
         full_path_without_suffix: Path = root_dir / record.path
@@ -890,9 +918,9 @@ def nomad_organize_data(task_ids, records, root_dir: Path, upload_preparation_di
             my_tar = tarfile.open(full_file_path.as_posix(), "r")
 
             file_names = my_tar.getnames()
-            print(file_names)
             vasp_run_names = [name for name in file_names if "vasprun" in name]
-            vasp_run_name = Path(vasp_run_names[0]).name
+            vasp_run_path = Path(vasp_run_names[0])  # launcher_name/OPTIONAL/vasprun-OPTIONAL.xml.gz
+            vasp_run_name = vasp_run_path.name
 
             external_id = record.task_id
             references = [f"https://materialsproject.org/tasks/{external_id}"]
@@ -904,11 +932,14 @@ def nomad_organize_data(task_ids, records, root_dir: Path, upload_preparation_di
                 block_index = full_path_without_suffix.as_posix().rfind(p)
                 if block_index > 0:
                     break
-            block_name, launcher_path = full_path_without_suffix.as_posix()[block_index:].split(sep="/", maxsplit=1)
+            block_name, launcher_paths = full_path_without_suffix.as_posix()[block_index:].split(sep="/", maxsplit=1)
+            launcher_paths = launcher_paths.split(sep="/")
+            launcher_folder_path, launcher_name = "/".join(launcher_paths[:-1]), launcher_paths[-1]
             print("block name -> ", block_name)
-            print("launcher_path -> ", launcher_path)
+            print("launcher_path -> ", launcher_folder_path)
             print("vasp_run_name -> ", vasp_run_name)
-            # entries[nomad_name] = {"external_id": external_id, "references": references}
+            nomad_name = Path(block_name) / launcher_folder_path / vasp_run_path
+            entries[nomad_name] = {"external_id": external_id, "references": references}
 
 
             # block_index = 0
