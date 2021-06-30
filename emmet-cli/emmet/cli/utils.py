@@ -900,6 +900,8 @@ def nomad_organize_data(task_ids, records, root_dir: Path, upload_preparation_di
             block_index = 0
             for p in PREFIXES:
                 block_index = full_path_without_suffix.as_posix().rfind(p)
+                if block_index > 0:
+                    break
             print(full_path_without_suffix.as_posix(), block_index)
             block_name, launcher_path = full_path_without_suffix.as_posix()[block_index:].split(sep="/", maxsplit=1)
             print("block name -> ", block_name)
