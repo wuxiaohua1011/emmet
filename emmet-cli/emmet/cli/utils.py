@@ -1209,6 +1209,7 @@ def log_to_mongodb(mongo_configfile: str, task_records: List[GDriveLog], raw_dir
     :param raw_dir: raw_directory
     :param compress_dir: compressed file directory
     :return:
+        None
     """
     configfile: Path = Path(mongo_configfile)
     gdrive_mongo_store = MongograntStore(mongogrant_spec="rw:knowhere.lbl.gov/mp_core_mwu",
