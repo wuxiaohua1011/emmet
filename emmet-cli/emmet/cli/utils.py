@@ -551,10 +551,10 @@ def make_tar_file(output_dir: Path, output_file_name: str, source_dir: Path):
     if output_tar_file.exists():
         shutil.rmtree(output_tar_file)
 
-
     with tarfile.open(output_tar_file.as_posix(), "w:gz") as tar:
+        print(source_dir, os.path.basename(source_dir.as_posix()))
         tar.add(source_dir.as_posix(), arcname=os.path.basename(source_dir.as_posix()))
-
+        print("Written")
 
 def compress_launchers(input_dir: Path, output_dir: Path, launcher_paths: List[str]):
     """
