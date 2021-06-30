@@ -1130,9 +1130,7 @@ def find_unuploaded_launcher_paths(outputfile, configfile, num) -> List[GDriveLo
         for p in PREFIXES:
             if dir_name.find(p) != -1:
                 start = dir_name.find(p)
-
         dir_name = dir_name[start:]
-
         gdrive_logs.append(GDriveLog(path=dir_name, task_id=task["task_id"]))
         line = dir_name + "\n"
         logger.info(f"Line = {line}")

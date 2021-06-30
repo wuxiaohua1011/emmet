@@ -685,11 +685,12 @@ def upload_latest(mongo_configfile, num_materials):
             restore_dir = (full_root_dir / "restore")
             if restore_dir.exists() is False:
                 restore_dir.mkdir(parents=True, exist_ok=True)
+            for p in PREFIXES:
+                restore_cmds = base_cmds[:-1] + [restore_dir.as_posix(), "-p", p, "-m", f"{len(task_records)}"] + \
+                               ["restore", "--inputfile", full_emmet_input_file_path.as_posix(), "-f", "*"]
 
-            restore_cmds = base_cmds[:-1] + [restore_dir.as_posix(), "-m", f"{len(task_records)}"] + \
-                           ["restore", "--inputfile", full_emmet_input_file_path.as_posix(), "-f", "*"]
-            run_and_log_info(args=restore_cmds)
-            logger.info(f"Restoring using command [{' '.join(restore_cmds)}]")
+                run_and_log_info(args=restore_cmds)
+                logger.info(f"Restoring using command [{' '.join(restore_cmds)}]")
             #
             # # move restored content to directory/raw
             # run_and_log_info(args=["rclone", "moveto", restore_dir.as_posix(), (full_root_dir / 'raw').as_posix()])
