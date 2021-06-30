@@ -566,8 +566,9 @@ def compress_launchers(input_dir: Path, output_dir: Path, launcher_paths: List[s
 
     for launcher_path in launcher_paths:
         out_dir = Path(output_dir) / Path(launcher_path).parent
-        print(output_dir)
+
         output_file_name = launcher_path.split("/")[-1]
+        print(output_dir, output_file_name, (out_dir / output_file_name).exists())
         if (out_dir / output_file_name).exists():
             continue
         else:
