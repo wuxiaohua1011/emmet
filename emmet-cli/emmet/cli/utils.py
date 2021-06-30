@@ -1122,12 +1122,17 @@ def find_unuploaded_launcher_paths(outputfile, configfile, num) -> List[GDriveLo
     gdrive_logs: List[GDriveLog] = []
     logger.info(f"Writing [{len(task_records)}] launcher paths to [{outputfile.as_posix()}]")
     output_file_stream = outputfile.open('w')
+    PREFIXES = ["res_", "aflow_", "block_"]
     for task in task_records:
         dir_name: str = task["dir_name"]
+        logger.info(dir_name)
         start = dir_name.find("block_")
         dir_name = dir_name[start:]
+
+
         gdrive_logs.append(GDriveLog(path=dir_name, task_id=task["task_id"]))
         line = dir_name + "\n"
+        logger.info(f"Line = {line}")
         output_file_stream.write(line)
 
     # epilogue

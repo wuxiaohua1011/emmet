@@ -273,7 +273,6 @@ def restore(inputfile, file_filter):  # noqa: C901
         os.chdir(directory)
         with click.progressbar(infile, label="Load blocks") as bar:
             for line in bar:
-                logger.info(f"HERE {line}")
                 if fnmatch(line, pattern):
                     if nlaunchers == nmax:
                         break
