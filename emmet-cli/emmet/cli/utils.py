@@ -938,7 +938,7 @@ def nomad_organize_data(task_ids, records, root_dir: Path, upload_preparation_di
             print("block name -> ", block_name)
             print("launcher_path -> ", launcher_folder_path)
             print("vasp_run_name -> ", vasp_run_name)
-            nomad_name = Path(block_name) / launcher_folder_path / vasp_run_path
+            nomad_name = (Path(block_name) / launcher_folder_path / vasp_run_path).as_posix()
             entries[nomad_name] = {"external_id": external_id, "references": references}
 
 
@@ -957,6 +957,8 @@ def nomad_organize_data(task_ids, records, root_dir: Path, upload_preparation_di
             # untar_source_file_path_to_arcname_map.append(
             #     (full_file_path.as_posix(), full_file_path.as_posix()[block_index:first_launcher_index - 1]))
             # logger.info(untar_source_file_path_to_arcname_map)
+    from pprint import pprint
+    pprint(nomad_json)
     print("untar_source_file_path_to_arcname_map", untar_source_file_path_to_arcname_map)
     return nomad_json, untar_source_file_path_to_arcname_map
 
