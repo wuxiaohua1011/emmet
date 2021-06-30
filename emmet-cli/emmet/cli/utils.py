@@ -576,12 +576,11 @@ def compress_launchers(input_dir: Path, output_dir: Path, launcher_paths: List[s
                 folder_name_start_index = launcher_path.rfind(p)
                 folder_name_end_index = launcher_path.find(output_file_name)
                 folder_name = launcher_path[folder_name_start_index:folder_name_end_index]
-                print(folder_name)
-                break
+        (output_dir / folder_name).mkdir(parents=True, exist_ok=True)
 
         # write to tar.gz file
         logger.info(f"Compressing {launcher_path}".strip())
-        output_tar_file = output_dir / output_file_name
+        output_tar_file = output_dir / folder_name / output_file_name
         source_dir = Path(input_dir) / launcher_path
         with tarfile.open(output_tar_file.as_posix()+".tar.gz", "w:gz") as tar:
             tar.add(source_dir.as_posix(), arcname=os.path.basename(source_dir.as_posix()))
