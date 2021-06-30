@@ -546,7 +546,8 @@ def make_tar_file(output_dir: Path, output_file_name: str, source_dir: Path):
 
     if output_tar_file.exists():
         os.remove(output_tar_file.as_posix())
-    print(output_tar_file)
+    print("output_dir", output_dir)
+    print("output_tar_file", output_tar_file)
     with tarfile.open(output_tar_file.as_posix(), "w:gz") as tar:
         print(source_dir, os.path.basename(source_dir.as_posix()))
         tar.add(source_dir.as_posix(), arcname=os.path.basename(source_dir.as_posix()))
