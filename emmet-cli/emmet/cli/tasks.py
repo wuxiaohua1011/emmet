@@ -718,14 +718,14 @@ def upload_latest(mongo_configfile, num_materials):
                        f"{(full_root_dir / 'tmp_storage').as_posix()}",
                        "--delete-empty-src-dirs"]
             run_and_log_info(args=mv_cmds)
-            #
-            # # run clean up command
-            # # DANGEROUS!!
-            # remove_raw = ["rclone", "purge", f"{(full_root_dir / 'raw').as_posix()}"]
-            # run_and_log_info(args=remove_raw)
-            #
-            # remove_restore = ["rclone", "purge", f"{restore_dir.as_posix()}"]
-            # run_and_log_info(args=remove_restore)
+
+            # run clean up command
+            # DANGEROUS!!
+            remove_raw = ["rclone", "purge", f"{(full_root_dir / 'raw').as_posix()}"]
+            run_and_log_info(args=remove_raw)
+
+            remove_restore = ["rclone", "purge", f"{restore_dir.as_posix()}"]
+            run_and_log_info(args=remove_restore)
         except Exception as e:
             logger.error(f"Something bad happened: {e}")
 
@@ -776,6 +776,7 @@ def clear_uploaded(mongo_configfile):
         for file in f:
             if '.tar.gz' in file and "nomad" not in r:
                 files.append(os.path.join(r, file))
+    print("files", files)
     cleaned_files = [file[file.find("block"):][:-7] for file in files]
     cursor = gdrive_mongo_store.query(criteria={"path": {"$in": cleaned_files}},
                                       properties={"path": 1, "nomad_updated": 1})

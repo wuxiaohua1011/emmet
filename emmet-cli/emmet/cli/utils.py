@@ -567,7 +567,6 @@ def compress_launchers(input_dir: Path, output_dir: Path, launcher_paths: List[s
     PREFIXES = ["res_", "aflow_", "block_"]
 
     for launcher_path in launcher_paths:
-        print("launcher_path:", launcher_path)
         output_file_name = launcher_path.split("/")[-1]
         folder_name = ""
         # make directory
