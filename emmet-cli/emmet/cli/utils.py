@@ -560,13 +560,13 @@ def compress_launchers(input_dir: Path, output_dir: Path, launcher_paths: List[s
 
     :param input_dir:
     :param output_dir:
-    :param block_name:
     :param launcher_paths:
     :return:
     """
 
     for launcher_path in launcher_paths:
         out_dir = Path(output_dir) / Path(launcher_path).parent
+        print(output_dir)
         output_file_name = launcher_path.split("/")[-1]
         if (out_dir / output_file_name).exists():
             continue
@@ -1032,7 +1032,15 @@ def _make_file_dict(file_path: Path, start_at: str) -> dict:
 
 def find_all_launcher_paths(emmet_input_file: Path, input_dir: Path) -> List[str]:
     """
-    return only the list of paths that actually exist
+    This function is meant to run after restore.
+
+    it is meant to compress data coming from a Restore command
+
+    However, if an item can no longer be found on HPSS, this item will simply not be restored,
+    No error will be thrown. Therefore, to prevent downstream headache,
+    I am going to use this function to filter out a list of paths that successfully restored
+
+    and then pass them into the compress function
     - raw
         - block_xxx/launcher
         - aflow_xxx/???
@@ -1042,29 +1050,11 @@ def find_all_launcher_paths(emmet_input_file: Path, input_dir: Path) -> List[str
     :return:
     """
     paths: List[str] = []
-    print(emmet_input_file)
     file = emmet_input_file.open("r")
     for line in file.readlines():
         path = input_dir / line.strip()
-        print(path, path.exists())
         if path.exists():
-            print("appending")
             paths.append(path.as_posix())
-    print(paths)
-    return paths
-
-
-def find_all_launcher_paths_helper(input_dir: Path) -> List[str]:
-    dir_name = input_dir.as_posix()
-    start = dir_name.find("block_")
-    dir_name = dir_name[start:]
-
-    paths: List[str] = [dir_name]  # since itself is a launcher path
-    for root, dirs, files in os.walk(input_dir.as_posix()):
-        for name in dirs:
-            if "launcher" in name:
-                sub_paths = find_all_launcher_paths_helper(Path(root) / name)
-                paths.extend(sub_paths)
     return paths
 
 
