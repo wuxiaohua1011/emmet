@@ -453,8 +453,10 @@ def compress(input_dir, output_dir, nproc):
     if full_input_dir.exists() is False:
         raise FileNotFoundError(f"input_dir {full_input_dir.as_posix()} not found")
 
-    paths: List[str] = find_all_launcher_paths(full_input_dir)
-
+    paths: List[str] = find_all_launcher_paths(
+        emmet_input_file=Path(directory) / "emmet_input_file.txt",
+        input_dir=full_input_dir)
+    print(paths)
     path_organized_by_blocks: Dict[str, List[str]] = dict()
     for path in paths:
         block_name = path.split("/")[0]

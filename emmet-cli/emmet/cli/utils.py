@@ -1030,14 +1030,23 @@ def _make_file_dict(file_path: Path, start_at: str) -> dict:
             "md5hash": md5_file(file_path)}
 
 
-def find_all_launcher_paths(input_dir: Path) -> List[str]:
+def find_all_launcher_paths(emmet_input_file: Path, input_dir: Path) -> List[str]:
+    """
+    return only the list of paths that actually exist
+    - raw
+        - block_xxx/launcher
+        - aflow_xxx/???
+        - res_xxx/???
+    :param emmet_input_file:
+    :param input_dir: should be the raw directory
+    :return:
+    """
     paths: List[str] = []
-    for root, dirs, files in os.walk(input_dir.as_posix()):
-        for name in dirs:
-            logger.info(name)
-            if "launcher" in name:
-                sub_paths = find_all_launcher_paths_helper(Path(root) / name)
-                paths.extend(sub_paths)
+    file = emmet_input_file.open("r")
+    for line in file.readlines():
+        path = input_dir / line
+        if path.exists():
+            paths.append(path.as_posix())
     return paths
 
 
