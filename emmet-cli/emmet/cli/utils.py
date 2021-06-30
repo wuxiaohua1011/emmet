@@ -574,7 +574,7 @@ def compress_launchers(input_dir: Path, output_dir: Path, launcher_paths: List[s
         output_tar_file = output_dir / output_file_name
         source_dir = Path(input_dir) / launcher_path
 
-        with tarfile.open(output_tar_file.as_posix(), "w:gz") as tar:
+        with tarfile.open(output_tar_file.as_posix()+".tar.gz", "w:gz") as tar:
             print(source_dir, os.path.basename(source_dir.as_posix()))
             tar.add(source_dir.as_posix(), arcname=os.path.basename(source_dir.as_posix()))
             print("Written")
