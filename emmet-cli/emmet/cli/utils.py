@@ -938,9 +938,12 @@ def nomad_organize_data(task_ids, records, root_dir: Path, upload_preparation_di
             print("block name -> ", block_name)
             print("launcher_path -> ", launcher_folder_path)
             print("vasp_run_name -> ", vasp_run_name)
-            nomad_name = (Path(block_name) / launcher_folder_path / vasp_run_path).as_posix()
+            nomad_name = (Path(upload_preparation_dir.name) / block_name
+                          / launcher_folder_path / vasp_run_path).as_posix()
             entries[nomad_name] = {"external_id": external_id, "references": references}
-
+            untar_source_file_path_to_arcname_map.append(
+                (full_file_path.as_posix(), (Path(block_name) / launcher_folder_path / launcher_name).as_posix())
+            )
 
             # block_index = 0
             # for p in PREFIXES:
