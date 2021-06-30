@@ -1044,6 +1044,7 @@ def find_all_launcher_paths(emmet_input_file: Path, input_dir: Path) -> List[str
     paths: List[str] = []
     file = emmet_input_file.open("r")
     for line in file.readlines():
+        print(line)
         path = input_dir / line
         if path.exists():
             paths.append(path.as_posix())
